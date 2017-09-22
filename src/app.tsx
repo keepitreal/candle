@@ -32,29 +32,29 @@ export function App(sources: AppSources): AppSinks {
     });
 
   const changeCurrency$: Stream<RequestBody> = selectCurrency$
-    .startWith('BTC')
-    .map((currency) => ({
-      url: `https://min-api.cryptocompare.com/data/price?fsym=${currency}&tsyms=BTC,USD,EUR`,
-      method: 'GET',
-      category: 'btcprice'
-    }));
+    .map(requestPrice);
+
+  const initRequest$: Stream<RequestBody> = sources.onion.state$
+    .map(({selectedCurrency}) => selectedCurrency)
+    .take(1)
+    .map(requestPrice);
 
   return {
     DOM: vdom$,
-    HTTP: changeCurrency$,
+    HTTP: xs.merge(changeCurrency$, initRequest$),
     onion: xs.merge(action$, initState$, updatePrice$)
   };
 }
 
 function intent(DOM: DOMSource) {
-  const selectCurrency$: Stream<Event> = DOM.select('.select-currency')
+  const selectCurrency$: Stream<string> = DOM.select('.select-currency')
     .events('change')
-    .map<Reducer>((ev: any) => {
+    .map<string>((ev: any) => {
       return ev.target.options[ev.target.selectedIndex].value;
-    })
+    });
 
   const action$ = selectCurrency$.map(
-    selectedCurrency => (state: AppState) => ({ ...state, selectedCurrency })
+    selectedCurrency => (state: AppState): AppState => ({ ...state, selectedCurrency })
   );
 
   return {
@@ -74,3 +74,10 @@ function view(state$: Stream<AppState>): Stream<VNode> {
   );
 }
 
+function requestPrice(symbol: string) {
+  return {
+    url: `https://min-api.cryptocompare.com/data/price?fsym=${symbol}&tsyms=BTC,USD,EUR`,
+    method: 'GET',
+    category: 'btcprice'
+  };
+}
