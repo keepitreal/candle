@@ -4,8 +4,12 @@ import { HTTPSource } from '@cycle/http';
 import { StateSource } from 'cycle-onionify';
 
 import { Sources, Sinks, RequestBody } from './interfaces';
+import Sidebar from './components/Sidebar';
+import Dashboard from './components/Dashboard';
+import Drawer from './components/Drawer';
 
-export type AppSources = Sources & { onion: StateSource<AppState> };
+export type AppSources = Sources & { onion: StateSource<AppState>; };
+export type ComponentSources = { DOM: DOMSource; props$: any };
 export type AppSinks = Sinks & { onion: Stream<Reducer> };
 export type Reducer = (prev: AppState) => AppState;
 export type AppState = {
@@ -16,7 +20,7 @@ export type AppState = {
 
 export function App(sources: AppSources): AppSinks {
   const {selectCurrency$, action$} = intent(sources.DOM);
-  const vdom$: Stream<VNode> = view(sources.onion.state$);
+  const vdom$: Stream<VNode> = view(sources);
 
   const initState$ = xs.of<Reducer>(() => ({
     price: 0,
@@ -63,16 +67,31 @@ function intent(DOM: DOMSource) {
   };
 }
 
-function view(state$: Stream<AppState>): Stream<VNode> {
-  return state$.map(({ price, currencies }) =>
-    <div>
-      <select className='select-currency'>
+function view(sources: AppSources): Stream<VNode> {
+  const {onion, DOM} = sources;
+  const {state$} = onion;
+  const sidebar = Sidebar({ DOM, props$: state$});
+  const dashboard = Dashboard({ DOM, props$: state$ });
+  const drawer = Drawer({ DOM, props$: state$ });
+
+  return xs.combine(state$, sidebar.DOM, dashboard.DOM, drawer.DOM)
+    .map(([{ price, currencies }, SidebarEl, DashboardEl, DrawerEl]) => {
+      return <div className="view-wrapper">
+        { SidebarEl }
+        <div className="main-view">
+          { DashboardEl }
+          { DrawerEl }
+        </div>
+      </div>
+    });
+}
+
+/*
+ <select className='select-currency'>
         {currencies.map(currency => <option value={currency}>{currency}</option>)}
       </select>
       <span>{'Price: ' + price}</span>
-    </div>
-  );
-}
+*/
 
 function requestPrice(symbol: string) {
   return {
