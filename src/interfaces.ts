@@ -4,14 +4,15 @@ import { HTTPSource, RequestOptions } from '@cycle/http';
 import { TimeSource } from '@cycle/time';
 
 export type Sources = {
-    DOM: DOMSource;
-    HTTP: HTTPSource;
-    Time: TimeSource;
+  DOM: DOMSource;
+  HTTP: HTTPSource;
+  Time: TimeSource;
+  websocket: Stream<WebsocketData>;
 };
 
 export type RootSinks = {
-    DOM: Stream<VNode>;
-    HTTP: Stream<RequestOptions>;
+  DOM: Stream<VNode>;
+  HTTP: Stream<RequestOptions>;
 };
 
 export type Sinks = Partial<RootSinks>;
@@ -22,3 +23,12 @@ export type RequestBody = {
   method: string;
   category: string;
 };
+
+export interface WebsocketData {
+  data: string;
+}
+
+export interface Currency {
+  price: number;
+  symb: string;
+}

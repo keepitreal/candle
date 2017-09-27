@@ -6,19 +6,22 @@ import { makeHTTPDriver } from '@cycle/http';
 import { timeDriver } from '@cycle/time';
 import isolate from '@cycle/isolate';
 import onionify from 'cycle-onionify';
+import io from 'socket.io-client';
+import {makeSocketIODriver} from 'cycle-socket.io';
 
 import { Component, Sources, RootSinks } from './interfaces';
 import { App } from './app';
 
 const main: Component = onionify(App);
-
+const url: string = 'wss://streamer.cryptocompare.com';
 let drivers: any, driverFn: any;
 
 /// #if PRODUCTION
 drivers = {
   DOM: makeDOMDriver('#app'),
   HTTP: makeHTTPDriver(),
-  Time: timeDriver
+  Time: timeDriver,
+  socketIO: makeSocketIODriver(io(url))
 };
 
 /// #else
@@ -27,7 +30,8 @@ driverFn = () => ({
     pauseSinksWhileReplaying: false
   }),
   HTTP: restartable(makeHTTPDriver()),
-  Time: timeDriver
+  Time: timeDriver,
+  socketIO: makeSocketIODriver(io(url))
 });
 /// #endif
 

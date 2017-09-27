@@ -9,7 +9,7 @@ export default function Drawer(sources: ComponentSources) {
     return props;
   });
 
-  const vdom$ = state$.map(({currencies}: any) => {
+  const vdom$ = state$.map(({currencies}) => {
     return <div className="drawer">
       <ul className="securities">
         <li className="legend">
@@ -18,7 +18,10 @@ export default function Drawer(sources: ComponentSources) {
           <span className="column-4">Price</span>
           <span className="column-4">Trading Volume</span>
         </li>
-        {currencies.map(currency => <li>{currency}</li>)}
+        {Object.keys(currencies).map((symb: string) => {
+          const currency = currencies[symb];
+          return <li>{`${currency.symb} ${currency.price}`}</li>;
+        })}
       </ul>
     </div>
   });

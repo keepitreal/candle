@@ -3,7 +3,7 @@
 import { ComponentSources } from '../app';
 
 export default function Dashboard(sources: ComponentSources) {
-  const props$ = sources.props$;
+  const {props$} = sources;
 
   const state$ = props$.map((props: any) => {
     return props;
@@ -14,7 +14,7 @@ export default function Dashboard(sources: ComponentSources) {
   });
 
   const sinks = {
-    DOM: vdom$
+    DOM: vdom$,
   };
 
   return sinks;
