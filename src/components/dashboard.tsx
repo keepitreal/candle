@@ -10,6 +10,7 @@ export default function Dashboard(sources: ComponentSources) {
   });
 
   const vdom$ = state$.map((state: any) => {
+    console.log(state);
     return <div className="dashboard">Dashboard</div>
   });
 
