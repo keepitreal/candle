@@ -2,7 +2,7 @@
 
 import xs from 'xstream';
 import {scaleTime, scaleLinear} from 'd3-scale';
-import {svg, h, h3, div} from '@cycle/dom';
+import {svg, h, h3, div, g} from '@cycle/dom';
 import {createAxisGenerator} from 'd3-axis-hyperscript';
 import { ComponentSources } from '../app';
 
@@ -18,21 +18,22 @@ export default function Dashboard(sources: ComponentSources) {
       .sort((a, b) => a.high > b.high)
       .pop() || {};
 
+    const earliestDay = days.pop() || new Date();
+
     const scaleY = scaleTime()
-      .domain([new Date(), hoursAgo(2)])
+      .domain([0, highestOpen])
       .range([0, 645]);
 
     const scaleX = scaleLinear()
-      .domain([0, highestOpen])
+      .domain([new Date(earliestDay.time), new Date()])
       .range([0, 1048]);
 
     return {scaleX, scaleY, days};
   });
 
   const xAxis$ = state$.map(
-    ({scaleX}) => axisGenerator
-      .axisBottom(scaleX)
-      .ticks(10)
+    ({scaleX, days}) => axisGenerator(scaleX, 'Horizontal', 20, 10)
+      .ticks(days.length)
   );
 
   const yAxis$ = state$.map(
@@ -46,7 +47,10 @@ export default function Dashboard(sources: ComponentSources) {
       return div('.dashboard', [
         svg('.dashboard-graph', {
           attrs: { viewBox: '0 0 1048 645', preserveAspectRatio: 'xMinYMin slice' }
-        }, [yAxis, xAxis])
+        }, [
+          yAxis,
+          h('g', { style: {transform: 'translateY(635px)'}}, [xAxis])
+        ])
       ]);
     });
 
