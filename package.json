@@ -21,6 +21,7 @@
     "cycle-onionify": "^3.3.0",
     "cycle-socket.io": "^4.0.0",
     "cycle-websocket": "^0.1.2",
+    "d3-axis-hyperscript": "0.0.1",
     "d3-scale": "^1.0.6",
     "d3-shape": "^1.2.0",
     "react-addons-update": "^15.6.2",

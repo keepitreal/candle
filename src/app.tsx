@@ -5,9 +5,9 @@ import { StateSource } from 'cycle-onionify';
 import update from 'react-addons-update';
 
 import { Sources, Sinks, RequestBody, WebsocketData, Currency } from './interfaces';
-import Sidebar from './components/Sidebar';
-import Dashboard from './components/Dashboard';
-import Drawer from './components/Drawer';
+import Sidebar from './components/sidebar';
+import Dashboard from './components/dashboard';
+import Drawer from './components/drawer';
 
 export type AppSources = Sources & { onion: StateSource<AppState>; socketIO: any };
 export type ComponentSources = { DOM: DOMSource; props$: any, socketIO?: Stream<WebsocketData> };
