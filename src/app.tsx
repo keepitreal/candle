@@ -26,9 +26,9 @@ export function App(sources: AppSources): AppSinks {
   const initState$ = xs.of<Reducer>(() => ({
     selected: 'BTC',
     currencies: {
-      BTC: { price: 0, symb: 'BTC' },
-      ETH: { price: 0, symb: 'ETH' },
-      LTC: { price: 0, symb: 'LTC' },
+      BTC: { price: 0, symb: 'BTC', days: [] },
+      ETH: { price: 0, symb: 'ETH', days: [] },
+      LTC: { price: 0, symb: 'LTC', days: [] },
     }
   }));
 
@@ -45,11 +45,11 @@ export function App(sources: AppSources): AppSinks {
     message: {subs: ['2~CCCAGG~BTC~USD']}
   });
 
-  const updatePrice$: Stream<Reducer> = sources.HTTP.select('price')
+  const histoData$: Stream<Reducer> = sources.HTTP.select('histoday')
     .flatten()
-    .map((res: any) => res.body)
-    .map<Reducer>((price: any) => (state: AppState) => {
-      return update(state, {currencies: {[state.selected]: {price: {$set: price.USD}}}});
+    .map((res: any) => res.body.Data)
+    .map<Reducer>((days: any) => (state: AppState) => {
+      return update(state, {currencies: {[state.selected]: {days: {$set: days}}});
     });
 
   const changeCurrency$: Stream<RequestBody> = selectCurrency$
@@ -61,7 +61,7 @@ export function App(sources: AppSources): AppSinks {
     DOM: vdom$,
     HTTP: xs.merge(changeCurrency$, initialData$),
     socketIO: outgoingMsg$,
-    onion: xs.merge(action$, initState$, updatePrice$, socketData$)
+    onion: xs.merge(action$, initState$, histoData$, socketData$)
   };
 }
 
@@ -102,9 +102,12 @@ function view(sources: AppSources): Stream<VNode> {
 }
 
 function requestPrice(symb) {
+  const now = Date.now();
+  const ts = new Date(now - (165 * 24 * 60 * 60 * 1000));
+
   return {
-    url: `https://min-api.cryptocompare.com/data/price?fsym=${symb}&tsyms=USD,EUR`,
+    url: `https://min-api.cryptocompare.com/data/histoday?fsym=${symb}&tsym=USD&toTs=${Math.round(ts.getTime() / 1000)}&e=CCCAGG`,
     method: 'GET',
-    category: 'price'
+    category: 'histoday'
   };
 }
