@@ -49,7 +49,7 @@ export function App(sources: AppSources): AppSinks {
     .flatten()
     .map((res: any) => res.body.Data)
     .map<Reducer>((days: any) => (state: AppState) => {
-      return update(state, {currencies: {[state.selected]: {days: {$set: days}}});
+      return update(state, {currencies: {[state.selected]: {days: {$set: days}}}});
     });
 
   const changeCurrency$: Stream<RequestBody> = selectCurrency$
