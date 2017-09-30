@@ -34,11 +34,11 @@ export default function Dashboard(sources: ComponentSources) {
 
       const earliestDay = days.pop() || new Date();
 
-      const scaleY = scaleTime()
+      const scaleY = scaleLinear()
         .domain([0, highestOpen])
-        .range([0, height]);
+        .range([height, 0]);
 
-      const scaleX = scaleLinear()
+      const scaleX = scaleTime()
         .domain([new Date(earliestDay.time), new Date()])
         .range([0, width]);
 
