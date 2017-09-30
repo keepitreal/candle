@@ -45,10 +45,19 @@ export default function Dashboard(sources: ComponentSources) {
       return {scaleX, scaleY, days, height, width};
     });
 
-  const xAxis$ = state$.map(
-    ({scaleX, days}) => axisGenerator(scaleX, 'Horizontal', 20, 10)
-      .ticks(days.length)
-  );
+  const xAxis$ = state$.map(({scaleX, days}) => {
+    return scaleX.ticks(days.length)
+      .map(scaleX)
+      .map((value, index) => {
+        const date = new Date(days[index].time);
+        return h('g.date-label', {}, [
+          h('text.date-text-label', {
+            attrs: {x: value, y: 10, transform: `rotate(-45 ${value} 10)`}
+          }, [`${date.getMonth()}/${date.getDate()}/${date.getFullYear()}`])
+        ]);
+      });
+    })
+    .map((dates) => h('g', dates))
 
   const yAxis$ = state$.map(
     ({scaleY}) => axisGenerator

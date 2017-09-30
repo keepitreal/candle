@@ -51,7 +51,10 @@ html, body {
   background-color: $background-grey;
 }
 
-
+.date-label {
+  transform: rotate(-45);
+  transform-origin: 50% 50%;
+}
 
 .securities {
   margin: 0;
