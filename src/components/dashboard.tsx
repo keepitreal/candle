@@ -1,11 +1,14 @@
 'use strict';
 
-import xs from 'xstream';
+import xs, {Stream} from 'xstream';
 import dropRepeats from 'xstream/extra/dropRepeats';
 import {scaleTime, scaleLinear} from 'd3-scale';
-import {svg, h, h3, div, g} from '@cycle/dom';
+import {svg, h, h3, div} from '@cycle/dom';
 import {createAxisGenerator} from 'd3-axis-hyperscript';
 import {ComponentSources} from '../app';
+import {BoundingBox} from '../interfaces';
+
+declare type ElementList = NodeListOf<HTMLElement>;
 
 const axisGenerator: any = createAxisGenerator(h);
 
@@ -13,17 +16,19 @@ export default function Dashboard(sources: ComponentSources) {
   const {props$, DOM} = sources;
 
   const graphBB$ = DOM.select('.dashboard-graph').elements()
-    .compose(dropRepeats((a, b) => b.length === a.length))
-    .map((svgEl) => {
-      return svgEl.length && svgEl[0].getBoundingClientRect();
-    });
+    .compose(
+      dropRepeats((a: ElementList, b: ElementList) => b.length === a.length)
+    )
+    .map((svgEl: ElementList) =>
+      svgEl.length && svgEl[0].getBoundingClientRect()
+    );
 
   const state$ = xs.combine(props$, graphBB$)
-    .map(([{selected, currencies}, graphBB]: [any]) => {
+    .map(([{selected, currencies}, graphBB]: [any, any]) => {
       const {days} = currencies[selected];
       const {height = 0, width = 0} = graphBB;
 
-      const {open: highestOpen, close: highestClose} = days
+      const {open: highestOpen = 0, close: highestClose = 0} = days
         .sort((a, b) => a.high > b.high)
         .pop() || {};
 
@@ -59,7 +64,7 @@ export default function Dashboard(sources: ComponentSources) {
           attrs: { viewBox: `0 0 ${width} ${height}`, preserveAspectRatio: 'xMinYMin slice' }
         }, [
           yAxis,
-          h('g', { style: {transform: 'translateY(635px)'}}, [xAxis])
+          h('g', { style: {transform: `translateY(${height - 10}px)`}}, [xAxis])
         ])
       ]);
     });

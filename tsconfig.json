@@ -8,7 +8,7 @@
     "jsx": "react",
     "jsxFactory": "Snabbdom.createElement",
     "noImplicitReturns": true,
-    "strict": true,
+    "noImplicitAny": false,
     "allowJs": true,
     "lib": ["ES6", "ES5", "DOM"]
   },

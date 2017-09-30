@@ -31,4 +31,10 @@ export interface WebsocketData {
 export interface Currency {
   price: number;
   symb: string;
+  days: Array<any>;
+}
+
+export interface BoundingBox {
+  height: number;
+  width: number;
 }

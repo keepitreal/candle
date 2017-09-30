@@ -6,7 +6,7 @@ import { makeHTTPDriver } from '@cycle/http';
 import { timeDriver } from '@cycle/time';
 import isolate from '@cycle/isolate';
 import onionify from 'cycle-onionify';
-import io from 'socket.io-client';
+import * as io from 'socket.io-client';
 import {makeSocketIODriver} from 'cycle-socket.io';
 
 import { Component, Sources, RootSinks } from './interfaces';

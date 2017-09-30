@@ -10,17 +10,19 @@ import Dashboard from './components/dashboard';
 import Drawer from './components/drawer';
 
 export type AppSources = Sources & { onion: StateSource<AppState>; socketIO: any };
-export type ComponentSources = { DOM: DOMSource; props$: any, socketIO?: Stream<WebsocketData> };
+export type ComponentSources = {
+  DOM: DOMSource;
+  props$: any,
+  socketIO?: Stream<WebsocketData>
+};
 export type AppSinks = Sinks & { onion: Stream<Reducer>; socketIO: any };
 export type Reducer = (prev: AppState) => AppState;
 export type AppState = {
-  price: number;
-  selectedCurrency: string;
-  currencies: Array<string>;
+  selected: string;
+  currencies: any;
 };
 
 export function App(sources: AppSources): AppSinks {
-  const {selectCurrency$, action$} = intent(sources.DOM);
   const {socketIO}: AppSources = sources;
 
   const initState$ = xs.of<Reducer>(() => ({
@@ -52,33 +54,13 @@ export function App(sources: AppSources): AppSinks {
       return update(state, {currencies: {[state.selected]: {days: {$set: days}}}});
     });
 
-  const changeCurrency$: Stream<RequestBody> = selectCurrency$
-    .map(requestPrice);
-
   const vdom$: Stream<VNode> = view(sources);
 
   return {
     DOM: vdom$,
-    HTTP: xs.merge(changeCurrency$, initialData$),
+    HTTP: xs.merge(initialData$),
     socketIO: outgoingMsg$,
-    onion: xs.merge(action$, initState$, histoData$, socketData$)
-  };
-}
-
-function intent(DOM: DOMSource) {
-  const selectCurrency$: Stream<string> = DOM.select('.select-currency')
-    .events('change')
-    .map<string>((ev: any) => {
-      return ev.target.options[ev.target.selectedIndex].value;
-    });
-
-  const action$ = selectCurrency$.map(
-    selectedCurrency => (state: AppState): AppState => ({ ...state, selectedCurrency })
-  );
-
-  return {
-    action$,
-    selectCurrency$
+    onion: xs.merge(initState$, histoData$)
   };
 }
 
@@ -90,7 +72,7 @@ function view(sources: AppSources): Stream<VNode> {
   const drawer = Drawer({ DOM, props$: state$ });
 
   return xs.combine(state$, sidebar.DOM, dashboard.DOM, drawer.DOM)
-    .map(([{ price, currencies }, SidebarEl, DashboardEl, DrawerEl]) => {
+    .map(([state, SidebarEl, DashboardEl, DrawerEl]) => {
       return <div className="view-wrapper">
         { SidebarEl }
         <div className="main-view">
