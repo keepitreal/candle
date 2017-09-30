@@ -9,27 +9,30 @@ import { ComponentSources } from '../app';
 const axisGenerator: any = createAxisGenerator(h);
 
 export default function Dashboard(sources: ComponentSources) {
-  const {props$} = sources;
+  const {props$, DOM} = sources;
+  const graphEl$ = DOM.select('.dashboard-graph').elements().drop(5);
 
-  const state$ = props$.map(({selected, currencies}: any) => {
-    const {days} = currencies[selected];
+  const state$ = xs.combine(props$, graphEl$)
+    .map(([{selected, currencies}, graphEl]: [any]) => {
+      const {days} = currencies[selected];
+      console.log(graphEl);
 
-    const {open: highestOpen, close: highestClose} = days
-      .sort((a, b) => a.high > b.high)
-      .pop() || {};
+      const {open: highestOpen, close: highestClose} = days
+        .sort((a, b) => a.high > b.high)
+        .pop() || {};
 
-    const earliestDay = days.pop() || new Date();
+      const earliestDay = days.pop() || new Date();
 
-    const scaleY = scaleTime()
-      .domain([0, highestOpen])
-      .range([0, 645]);
+      const scaleY = scaleTime()
+        .domain([0, highestOpen])
+        .range([0, 645]);
 
-    const scaleX = scaleLinear()
-      .domain([new Date(earliestDay.time), new Date()])
-      .range([0, 1048]);
+      const scaleX = scaleLinear()
+        .domain([new Date(earliestDay.time), new Date()])
+        .range([0, 1048]);
 
-    return {scaleX, scaleY, days};
-  });
+      return {scaleX, scaleY, days};
+    });
 
   const xAxis$ = state$.map(
     ({scaleX, days}) => axisGenerator(scaleX, 'Horizontal', 20, 10)
