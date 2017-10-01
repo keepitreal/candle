@@ -1,8 +1,8 @@
 'use strict';
 
-import { ComponentSources } from '../app';
+import {ComponentSources, AppSinks} from '../app';
 
-export default function Drawer(sources: ComponentSources) {
+export default function Drawer(sources: ComponentSources): AppSinks {
   const props$ = sources.props$;
 
   const state$ = props$.map((props: any) => {
@@ -23,7 +23,7 @@ export default function Drawer(sources: ComponentSources) {
           return <li>{`${currency.symb} ${currency.price}`}</li>;
         })}
       </ul>
-    </div>
+    </div>;
   });
 
   const sinks = {

@@ -20,7 +20,7 @@ let drivers: any, driverFn: any;
 drivers = {
   DOM: makeDOMDriver('#app'),
   HTTP: makeHTTPDriver(),
-  Time: timeDriver,
+  Time: timeDriver
   //socketIO: makeSocketIODriver(io(url))
 };
 
@@ -30,7 +30,7 @@ driverFn = () => ({
     pauseSinksWhileReplaying: false
   }),
   HTTP: restartable(makeHTTPDriver()),
-  Time: timeDriver,
+  Time: timeDriver
   //socketIO: makeSocketIODriver(io(url))
 });
 /// #endif

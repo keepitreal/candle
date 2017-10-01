@@ -30,7 +30,7 @@ export function App(sources: AppSources): AppSinks {
     currencies: {
       BTC: { price: 0, symb: 'BTC', days: [] },
       ETH: { price: 0, symb: 'ETH', days: [] },
-      LTC: { price: 0, symb: 'LTC', days: [] },
+      LTC: { price: 0, symb: 'LTC', days: [] }
     }
   }));
 
@@ -79,11 +79,11 @@ function view(sources: AppSources): Stream<VNode> {
           { DashboardEl }
           { DrawerEl }
         </div>
-      </div>
+      </div>;
     });
 }
 
-function requestPrice(symb) {
+function requestPrice(symb: string): RequestBody {
   const now = Date.now();
   const ts = new Date(now - (165 * 24 * 60 * 60 * 1000));
 

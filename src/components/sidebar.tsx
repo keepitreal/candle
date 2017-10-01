@@ -3,7 +3,7 @@
 import { Sources, Sinks, RequestBody } from '../interfaces';
 import { ComponentSources, AppSinks } from '../app';
 
-export default function Sidebar(sources: ComponentSources) {
+export default function Sidebar(sources: ComponentSources): AppSinks {
   const domSource = sources.DOM;
   const props$ = sources.props$;
 
@@ -12,7 +12,7 @@ export default function Sidebar(sources: ComponentSources) {
   });
 
   const vdom$ = state$.map((state: any) => {
-    return <div className="sidebar">Sidebar</div>
+    return <div className="sidebar">Sidebar</div>;
   });
 
   const sinks = {
@@ -21,4 +21,3 @@ export default function Sidebar(sources: ComponentSources) {
 
   return sinks;
 }
-

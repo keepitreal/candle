@@ -5,14 +5,14 @@ import dropRepeats from 'xstream/extra/dropRepeats';
 import {scaleTime, scaleLinear} from 'd3-scale';
 import {svg, h, h3, div} from '@cycle/dom';
 import {createAxisGenerator} from 'd3-axis-hyperscript';
-import {ComponentSources} from '../app';
+import {ComponentSources, AppSinks} from '../app';
 import {BoundingBox} from '../interfaces';
 
 declare type ElementList = NodeListOf<HTMLElement>;
 
 const axisGenerator: any = createAxisGenerator(h);
 
-export default function Dashboard(sources: ComponentSources) {
+export default function Dashboard(sources: ComponentSources): AppSinks {
   const {props$, DOM} = sources;
 
   const graphBB$ = DOM.select('.dashboard-graph').elements()
@@ -58,7 +58,7 @@ export default function Dashboard(sources: ComponentSources) {
         ]);
       });
     })
-    .map((dates) => h('g', dates))
+    .map((dates) => h('g', dates));
 
   const yAxis$ = state$.map(
     ({scaleY}) => axisGenerator
@@ -80,9 +80,8 @@ export default function Dashboard(sources: ComponentSources) {
     });
 
   const sinks = {
-    DOM: vdom$,
+    DOM: vdom$
   };
 
   return sinks;
 }
-
