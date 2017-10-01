@@ -74,7 +74,6 @@ function view(sources: AppSources): Stream<VNode> {
   return xs.combine(state$, sidebar.DOM, dashboard.DOM, drawer.DOM)
     .map(([state, SidebarEl, DashboardEl, DrawerEl]) => {
       return <div className="view-wrapper">
-        { SidebarEl }
         <div className="main-view">
           { DashboardEl }
           { DrawerEl }

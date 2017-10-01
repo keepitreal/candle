@@ -34,10 +34,10 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
         .pop() || {};
 
       const earliestDay = days.slice().pop() || new Date();
-
+  console.log(highestOpen, height);
       const scaleY = scaleLinear()
         .domain([0, highestOpen])
-        .range([height, 0]);
+        .range([0, height]);
 
       const scaleX = scaleTime()
         .domain([new Date(Math.round(earliestDay.time * 1000)), new Date()])
@@ -53,18 +53,23 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
         const date = (days[index] && new Date(days[index].time * 1000)) || new Date();
         return h('g.date-label', {}, [
           index % 2 === 0 ? h('text.date-text-label', {
-            attrs: {x: value, y: 10, transform: `rotate(-45 ${value} 10)`}
-          }, [`${date.getMonth()}/${date.getDate()}/${date.getFullYear()}`]) : h('text', '')
+            attrs: {x: value, y: 10}
+          }, [`${date.getMonth()}/${date.getDate()}`]) : h('text', '')
         ]);
       });
-    })
-    .map((dates) => h('g', dates));
+    });
 
-  const yAxis$ = state$.map(
-    ({scaleY}) => axisGenerator
-      .axisLeft(scaleY)
-      .ticks(10)
-  );
+  const yAxis$ = state$.map(({scaleY, height}) => {
+    return scaleY.ticks(10)
+      .map((value) => {
+        console.log(scaleY(value));
+        return h('g.y-axis-label', [
+          h('text', {
+            attrs: {x: 10, y: (height - scaleY(value))}
+          }, `${value}`)
+        ]);
+      });
+    });
 
   const vdom$ = xs.combine(state$, xAxis$, yAxis$)
     .map(([state, xAxis, yAxis]: [any, any, any]) => {
@@ -73,8 +78,8 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
         svg('.dashboard-graph', {
           attrs: { viewBox: `0 0 ${width} ${height}`, preserveAspectRatio: 'xMinYMin slice' }
         }, [
-          yAxis,
-          h('g', { style: {transform: `translateY(${height - 10}px)`}}, [xAxis])
+          h('g.y-axis', {style: {transform: `translateX(${width - 50}px)`}}, yAxis),
+          h('g.x-axis', {style: {transform: `translateY(${height - 10}px)`}}, xAxis)
         ])
       ]);
     });
