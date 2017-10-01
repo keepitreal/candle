@@ -1,7 +1,6 @@
 'use strict';
 
-import { Sources, Sinks, RequestBody } from '../interfaces';
-import { ComponentSources, AppSinks } from '../app';
+import { ComponentSources, AppSinks } from '../interfaces';
 
 export default function Sidebar(sources: ComponentSources): AppSinks {
   const domSource = sources.DOM;

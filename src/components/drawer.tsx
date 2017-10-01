@@ -1,6 +1,6 @@
 'use strict';
 
-import {ComponentSources, AppSinks} from '../app';
+import {ComponentSources, AppSinks} from '../interfaces';
 
 export default function Drawer(sources: ComponentSources): AppSinks {
   const props$ = sources.props$;

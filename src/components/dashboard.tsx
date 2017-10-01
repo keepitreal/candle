@@ -5,8 +5,7 @@ import dropRepeats from 'xstream/extra/dropRepeats';
 import {scaleTime, scaleLinear} from 'd3-scale';
 import {svg, h, h3, div} from '@cycle/dom';
 import {createAxisGenerator} from 'd3-axis-hyperscript';
-import {ComponentSources, AppSinks} from '../app';
-import {BoundingBox} from '../interfaces';
+import {BoundingBox, ComponentSources, AppSinks} from '../interfaces';
 
 declare type ElementList = NodeListOf<HTMLElement>;
 
@@ -34,7 +33,7 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
         .pop() || {};
 
       const earliestDay = days.slice().pop() || new Date();
-  console.log(highestOpen, height);
+
       const scaleY = scaleLinear()
         .domain([0, highestOpen])
         .range([0, height]);
@@ -62,7 +61,6 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
   const yAxis$ = state$.map(({scaleY, height}) => {
     return scaleY.ticks(10)
       .map((value) => {
-        console.log(scaleY(value));
         return h('g.y-axis-label', [
           h('text', {
             attrs: {x: 10, y: (height - scaleY(value))}

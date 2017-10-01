@@ -1,26 +1,24 @@
 import xs, { Stream } from 'xstream';
 import { VNode, DOMSource } from '@cycle/dom';
 import { HTTPSource } from '@cycle/http';
-import { StateSource } from 'cycle-onionify';
 import update from 'react-addons-update';
 
-import { Sources, Sinks, RequestBody, WebsocketData, Currency } from './interfaces';
 import Sidebar from './components/sidebar';
 import Dashboard from './components/dashboard';
 import Drawer from './components/drawer';
 
-export type AppSources = Sources & { onion: StateSource<AppState>; socketIO: any };
-export type ComponentSources = {
-  DOM: DOMSource;
-  props$: any,
-  socketIO?: Stream<WebsocketData>
-};
-export type AppSinks = Sinks & { onion: Stream<Reducer>; socketIO: any };
-export type Reducer = (prev: AppState) => AppState;
-export type AppState = {
-  selected: string;
-  currencies: any;
-};
+import {
+  Sources,
+  Sinks,
+  RequestBody,
+  WebsocketData,
+  Currency,
+  AppSources,
+  ComponentSources,
+  AppSinks,
+  Reducer,
+  AppState
+} from './interfaces';
 
 export function App(sources: AppSources): AppSinks {
   const {socketIO}: AppSources = sources;
@@ -84,7 +82,7 @@ function view(sources: AppSources): Stream<VNode> {
 
 function requestPrice(symb: string): RequestBody {
   const now = Date.now();
-  const ts = new Date(now - (165 * 24 * 60 * 60 * 1000));
+  const ts = new Date(now - (30 * 24 * 60 * 60 * 1000));
 
   return {
     url: `https://min-api.cryptocompare.com/data/histoday?fsym=${symb}&tsym=USD&toTs=${Math.round(ts.getTime() / 1000)}&e=CCCAGG`,
