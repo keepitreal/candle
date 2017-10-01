@@ -29,17 +29,18 @@ export default function Dashboard(sources: ComponentSources) {
       const {height = 0, width = 0} = graphBB;
 
       const {open: highestOpen = 0, close: highestClose = 0} = days
+        .slice()
         .sort((a, b) => a.high > b.high)
         .pop() || {};
 
-      const earliestDay = days.pop() || new Date();
+      const earliestDay = days.slice().pop() || new Date();
 
       const scaleY = scaleLinear()
         .domain([0, highestOpen])
         .range([height, 0]);
 
       const scaleX = scaleTime()
-        .domain([new Date(earliestDay.time), new Date()])
+        .domain([new Date(Math.round(earliestDay.time * 1000)), new Date()])
         .range([0, width]);
 
       return {scaleX, scaleY, days, height, width};
@@ -49,11 +50,11 @@ export default function Dashboard(sources: ComponentSources) {
     return scaleX.ticks(days.length)
       .map(scaleX)
       .map((value, index) => {
-        const date = new Date(days[index].time);
+        const date = (days[index] && new Date(days[index].time * 1000)) || new Date();
         return h('g.date-label', {}, [
-          h('text.date-text-label', {
+          index % 2 === 0 ? h('text.date-text-label', {
             attrs: {x: value, y: 10, transform: `rotate(-45 ${value} 10)`}
-          }, [`${date.getMonth()}/${date.getDate()}/${date.getFullYear()}`])
+          }, [`${date.getMonth()}/${date.getDate()}/${date.getFullYear()}`]) : h('text', '')
         ]);
       });
     })

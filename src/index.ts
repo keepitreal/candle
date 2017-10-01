@@ -21,7 +21,7 @@ drivers = {
   DOM: makeDOMDriver('#app'),
   HTTP: makeHTTPDriver(),
   Time: timeDriver,
-  socketIO: makeSocketIODriver(io(url))
+  //socketIO: makeSocketIODriver(io(url))
 };
 
 /// #else
@@ -31,7 +31,7 @@ driverFn = () => ({
   }),
   HTTP: restartable(makeHTTPDriver()),
   Time: timeDriver,
-  socketIO: makeSocketIODriver(io(url))
+  //socketIO: makeSocketIODriver(io(url))
 });
 /// #endif
 

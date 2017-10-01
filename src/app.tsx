@@ -34,8 +34,8 @@ export function App(sources: AppSources): AppSinks {
     }
   }));
 
-  const socketData$ = socketIO.get('m')
-    .map((data: any) => (state: AppState) => state);
+  //const socketData$ = socketIO.get('m')
+  //  .map((data: any) => (state: AppState) => state);
 
   const initialData$: Stream<RequestBody> = sources.onion.state$
     .map(({selected}) => selected)
@@ -59,7 +59,7 @@ export function App(sources: AppSources): AppSinks {
   return {
     DOM: vdom$,
     HTTP: xs.merge(initialData$),
-    socketIO: outgoingMsg$,
+   // socketIO: outgoingMsg$,
     onion: xs.merge(initState$, histoData$)
   };
 }
