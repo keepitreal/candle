@@ -38,7 +38,7 @@ export function App(sources: AppSources): AppSinks {
   const initialData$: Stream<RequestBody> = sources.onion.state$
     .map(({selected}) => selected)
     .take(1)
-    .map(requestPrice);
+    .map(requestData);
 
   const outgoingMsg$ = xs.of({
     messageType: 'SubAdd',
@@ -80,7 +80,7 @@ function view(sources: AppSources): Stream<VNode> {
     });
 }
 
-function requestPrice(symb: string): RequestBody {
+function requestData(symb: string): RequestBody {
   const now = Date.now();
   const ts = new Date(now - (30 * 24 * 60 * 60 * 1000));
 

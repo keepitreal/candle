@@ -50,7 +50,7 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
       .map(scaleX)
       .map((value, index) => {
         const date = (days[index] && new Date(days[index].time * 1000)) || new Date();
-        return h('g.date-label', {}, [
+        return h('g.axis-label', {}, [
           index % 2 === 0 ? h('text.date-text-label', {
             attrs: {x: value, y: 10}
           }, [`${date.getMonth()}/${date.getDate()}`]) : h('text', '')
@@ -61,7 +61,7 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
   const yAxis$ = state$.map(({scaleY, height}) => {
     return scaleY.ticks(10)
       .map((value) => {
-        return h('g.y-axis-label', [
+        return h('g.axis-label', [
           h('text', {
             attrs: {x: 10, y: (height - scaleY(value))}
           }, `${value}`)
