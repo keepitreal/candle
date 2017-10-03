@@ -2,9 +2,10 @@
 
 import xs, {Stream} from 'xstream';
 import dropRepeats from 'xstream/extra/dropRepeats';
-import {scaleTime, scaleLinear} from 'd3-scale';
 import {svg, h, h3, div} from '@cycle/dom';
 import {createAxisGenerator} from 'd3-axis-hyperscript';
+import {scaleTime, scaleLinear} from 'd3-scale';
+import {line, curveBasis} from 'd3-shape';
 import {BoundingBox, ComponentSources, AppSinks} from '../interfaces';
 
 declare type ElementList = NodeListOf<HTMLElement>;
@@ -69,15 +70,27 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
       });
     });
 
-  const vdom$ = xs.combine(state$, xAxis$, yAxis$)
-    .map(([state, xAxis, yAxis]: [any, any, any]) => {
+  const lineFn$ = state$.map(({scaleX, scaleY}) => {
+    return line().curve(curveBasis)
+      .x(d => scaleX(new Date(d.time * 1000)))
+      .y(d => scaleY(d.high));
+  });
+
+  const line$ = xs.combine(state$, lineFn$)
+    .map(([{days}, lineFn]) => {
+      return h('path', {attrs: {d: lineFn(days), stroke: '#fff'}});
+    });
+
+  const vdom$ = xs.combine(state$, xAxis$, yAxis$, line$)
+    .map(([state, xAxis, yAxis, line]: [any, any, any, any]) => {
       const {height, width} = state;
       return div('.dashboard', [
         svg('.dashboard-graph', {
           attrs: { viewBox: `0 0 ${width} ${height}`, preserveAspectRatio: 'xMinYMin slice' }
         }, [
           h('g.y-axis', {style: {transform: `translateX(${width - 50}px)`}}, yAxis),
-          h('g.x-axis', {style: {transform: `translateY(${height - 10}px)`}}, xAxis)
+          h('g.x-axis', {style: {transform: `translateY(${height - 10}px)`}}, xAxis),
+          h('g.line', line)
         ])
       ]);
     });
