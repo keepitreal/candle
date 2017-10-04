@@ -28,15 +28,15 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
       const {days} = currencies[selected];
       const {height = 0, width = 0} = graphBB;
 
-      const {open: highestOpen = 0, close: highestClose = 0} = days
+      const {high = 0} = days
         .slice()
         .sort((a, b) => a.high > b.high)
         .pop() || {};
 
-      const earliestDay = days.slice().pop() || new Date();
+      const earliestDay = days.slice().shift() || new Date();
 
       const scaleY = scaleLinear()
-        .domain([0, highestOpen])
+        .domain([0, high])
         .range([0, height]);
 
       const scaleX = scaleTime()
@@ -71,9 +71,16 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
     });
 
   const lineFn$ = state$.map(({scaleX, scaleY}) => {
-    return line().curve(curveBasis)
-      .x(d => scaleX(new Date(d.time * 1000)))
-      .y(d => scaleY(d.high));
+    return line()
+      .x(d => {
+        const date = new Date(Math.round(d.time * 1000));
+        console.log(date, scaleX(date));
+        return scaleX(date)
+      }
+      )
+      .y(d => {
+        return scaleY(d.high)
+      });
   });
 
   const line$ = xs.combine(state$, lineFn$)

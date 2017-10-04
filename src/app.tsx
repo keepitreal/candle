@@ -81,11 +81,11 @@ function view(sources: AppSources): Stream<VNode> {
 }
 
 function requestData(symb: string): RequestBody {
-  const now = Date.now();
-  const ts = new Date(now - (30 * 24 * 60 * 60 * 1000));
+  const now = new Date();
+  const ts = Math.round(now.getTime() / 1000);
 
   return {
-    url: `https://min-api.cryptocompare.com/data/histoday?fsym=${symb}&tsym=USD&toTs=${Math.round(ts.getTime() / 1000)}&e=CCCAGG`,
+    url: `https://min-api.cryptocompare.com/data/histoday?fsym=${symb}&tsym=USD&toTs=${ts}&e=CCCAGG`,
     method: 'GET',
     category: 'histoday'
   };
