@@ -33,14 +33,15 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
         .sort((a, b) => a.high > b.high)
         .pop() || {};
 
-      const earliestDay = days.slice().shift() || new Date();
+      const earliest = days.slice().shift() || {};
+      const latest = days.slice().pop() || {};
 
       const scaleY = scaleLinear()
         .domain([0, high])
         .range([0, height]);
 
       const scaleX = scaleTime()
-        .domain([new Date(Math.round(earliestDay.time * 1000)), new Date()])
+        .domain([new Date(Math.round(earliest.time * 1000)), new Date(Math.round(latest.time * 1000))])
         .range([0, width]);
 
       return {scaleX, scaleY, days, height, width};
