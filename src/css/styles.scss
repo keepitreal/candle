@@ -60,8 +60,9 @@ html, body {
 }
 
 path.line {
-  stroke: white;
-  stroke-width: 3px;
+  stroke: #66c3c8;
+  stroke-width: 5px;
+  stroke-linejoin: round;
   fill: none;
 }
 

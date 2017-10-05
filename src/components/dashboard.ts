@@ -15,7 +15,9 @@ const axisGenerator: any = createAxisGenerator(h);
 export default function Dashboard(sources: ComponentSources): AppSinks {
   const {props$, DOM} = sources;
 
-  const graphBB$ = DOM.select('.dashboard-graph').elements()
+  const margin = {top: 20, bottom: 20, right: 100, left: 30};
+
+  const graphBounds$ = DOM.select('.dashboard-graph').elements()
     .compose(
       dropRepeats((a: ElementList, b: ElementList) => b.length === a.length)
     )
@@ -23,10 +25,10 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
       svgEl.length && svgEl[0].getBoundingClientRect()
     );
 
-  const state$ = xs.combine(props$, graphBB$)
-    .map(([{selected, currencies}, graphBB]: [any, any]) => {
+  const state$ = xs.combine(props$, graphBounds$)
+    .map(([{selected, currencies}, graphBounds]: [any, any]) => {
       const {days} = currencies[selected];
-      const {height = 0, width = 0} = graphBB;
+      const {height = 0, width = 0} = graphBounds;
 
       const daysByPrice = days
         .slice()
@@ -42,11 +44,11 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
 
       const scaleY = scaleLinear()
         .domain([(low - buffer), (high + buffer)])
-        .range([0, height]);
+        .range([margin.bottom, height - margin.top]);
 
       const scaleX = scaleTime()
         .domain([new Date(Math.round(earliest.time * 1000)), new Date(Math.round(latest.time * 1000))])
-        .range([0, width]);
+        .range([margin.left, width - margin.right]);
 
       return {scaleX, scaleY, days, height, width};
     });
@@ -56,8 +58,9 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
       .map(scaleX)
       .map((value, index) => {
         const date = (days[index] && new Date(days[index].time * 1000)) || new Date();
+        console.log(date);
         return h('g.axis-label', {}, [
-          index % 2 === 0 ? h('text.date-text-label', {
+          index % 2 !== 0 ? h('text.date-text-label', {
             attrs: {x: value, y: 10}
           }, [`${date.getMonth()}/${date.getDate()}`]) : h('text', '')
         ]);
@@ -98,7 +101,7 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
         svg('.dashboard-graph', {
           attrs: { viewBox: `0 0 ${width} ${height}`, preserveAspectRatio: 'xMinYMin slice' }
         }, [
-          h('g.y-axis', {style: {transform: `translateX(${width - 50}px)`}}, yAxis),
+          h('g.y-axis', {style: {transform: `translateX(${width - 80}px)`}}, yAxis),
           h('g.x-axis', {style: {transform: `translateY(${height - 10}px)`}}, xAxis),
           h('g.line', line)
         ])
