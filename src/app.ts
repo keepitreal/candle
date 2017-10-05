@@ -1,8 +1,8 @@
 import xs, { Stream } from 'xstream';
-import { VNode, DOMSource } from '@cycle/dom';
-import { HTTPSource } from '@cycle/http';
+import {VNode, DOMSource} from '@cycle/dom';
+import {HTTPSource} from '@cycle/http';
+import {div} from '@cycle/dom';
 import update from 'react-addons-update';
-
 import Sidebar from './components/sidebar';
 import Dashboard from './components/dashboard';
 import Drawer from './components/drawer';
@@ -71,12 +71,9 @@ function view(sources: AppSources): Stream<VNode> {
 
   return xs.combine(state$, sidebar.DOM, dashboard.DOM, drawer.DOM)
     .map(([state, SidebarEl, DashboardEl, DrawerEl]) => {
-      return <div className="view-wrapper">
-        <div className="main-view">
-          { DashboardEl }
-          { DrawerEl }
-        </div>
-      </div>;
+      return div('.view-wrapper', [
+        div('.main-view', [DashboardEl, DrawerEl])
+      ]);
     });
 }
 

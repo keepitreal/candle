@@ -1,6 +1,7 @@
 'use strict';
 
-import { ComponentSources, AppSinks } from '../interfaces';
+import {div} from '@cycle/dom';
+import {ComponentSources, AppSinks} from '../interfaces';
 
 export default function Sidebar(sources: ComponentSources): AppSinks {
   const domSource = sources.DOM;
@@ -11,7 +12,7 @@ export default function Sidebar(sources: ComponentSources): AppSinks {
   });
 
   const vdom$ = state$.map((state: any) => {
-    return <div className="sidebar">Sidebar</div>;
+    return div('.sidebar', '');
   });
 
   const sinks = {
