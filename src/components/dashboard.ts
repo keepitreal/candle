@@ -5,7 +5,7 @@ import dropRepeats from 'xstream/extra/dropRepeats';
 import {svg, h, h3, div} from '@cycle/dom';
 import {createAxisGenerator} from 'd3-axis-hyperscript';
 import {scaleTime, scaleLinear} from 'd3-scale';
-import {line, curveBasis} from 'd3-shape';
+import {area, line, curveBasis} from 'd3-shape';
 import {BoundingBox, ComponentSources, AppSinks} from '../interfaces';
 
 declare type ElementList = NodeListOf<HTMLElement>;
@@ -28,16 +28,20 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
       const {days} = currencies[selected];
       const {height = 0, width = 0} = graphBB;
 
-      const {high = 0} = days
+      const daysByPrice = days
         .slice()
-        .sort((a, b) => a.high > b.high)
-        .pop() || {};
+        .sort((a, b) => a.high > b.high);
+
+      const {high = 0} = daysByPrice.pop() || {};
+      const {low = 0} = daysByPrice.shift() || {};
+
+      const buffer = ((low + high) / 2) * 0.10;
 
       const earliest = days.slice().shift() || {};
       const latest = days.slice().pop() || {};
 
       const scaleY = scaleLinear()
-        .domain([0, high])
+        .domain([(low - buffer), (high + buffer)])
         .range([0, height]);
 
       const scaleX = scaleTime()
@@ -71,22 +75,20 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
       });
     });
 
-  const lineFn$ = state$.map(({scaleX, scaleY}) => {
-    return line()
-      .x(d => {
-        const date = new Date(Math.round(d.time * 1000));
-        console.log(date, scaleX(date));
-        return scaleX(date)
-      }
-      )
-      .y(d => {
-        return scaleY(d.high)
-      });
-  });
+  const lineFns$ = state$.map(({scaleX, scaleY}) => ({
+      area: area()
+        .x(d => scaleX(new Date(Math.round(d.time * 1000))))
+        .y(d => scaleY(d.high)),
+      line: line()
+        .x(d => scaleX(new Date(Math.round(d.time * 1000))))
+        .y(d => scaleY(d.high))
+  }));
 
-  const line$ = xs.combine(state$, lineFn$)
-    .map(([{days}, lineFn]) => {
-      return h('path', {attrs: {d: lineFn(days), stroke: '#fff'}});
+  const line$ = xs.combine(state$, lineFns$)
+    .map(([{days}, {area, line}]) => {
+      return h('g', [
+        h('path.line', {attrs: {d: line(days)}})
+      ])
     });
 
   const vdom$ = xs.combine(state$, xAxis$, yAxis$, line$)
