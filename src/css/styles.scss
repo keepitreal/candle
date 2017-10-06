@@ -1,6 +1,7 @@
 $background-dark: #272D35;
 $background-light: #434953;
 $background-grey: #eeeeee;
+$graph-text: lighten($background-light, 30%);
 
 html, body {
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -55,8 +56,13 @@ html, body {
   color: white;
 
   & > text {
-    fill: lighten($background-light, 30%);
+    fill: $graph-text;
   }
+}
+
+text.axis-legend {
+  fill: $background-grey;
+  font-size: 14px;
 }
 
 path.line {

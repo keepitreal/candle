@@ -15,7 +15,7 @@ const axisGenerator: any = createAxisGenerator(h);
 export default function Dashboard(sources: ComponentSources): AppSinks {
   const {props$, DOM} = sources;
 
-  const margin = {top: 20, bottom: 20, right: 100, left: 30};
+  const margin = {top: 60, bottom: 20, right: 100, left: 30};
 
   const graphBounds$ = DOM.select('.dashboard-graph').elements()
     .compose(
@@ -101,7 +101,10 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
         svg('.dashboard-graph', {
           attrs: { viewBox: `0 0 ${width} ${height}`, preserveAspectRatio: 'xMinYMin slice' }
         }, [
-          h('g.y-axis', {style: {transform: `translateX(${width - 80}px)`}}, yAxis),
+          h('g.y-axis', {style: {transform: `translateX(${width - 80}px)`}}, [
+            h('text.axis-legend', {attrs: {x: 10, y: margin.top / 2 + 20, height: 16}}, '$'),
+            ...yAxis
+          ]),
           h('g.x-axis', {style: {transform: `translateY(${height - 10}px)`}}, xAxis),
           h('g.line', line)
         ])
