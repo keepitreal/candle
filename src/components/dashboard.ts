@@ -15,22 +15,20 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
   const margin = {top: 60, bottom: 20, right: 100, left: 30};
 
   const graphBounds$ = DOM.select('.dashboard-graph').elements()
-    .compose(
-      dropRepeats((a: ElementList, b: ElementList) => b.length === a.length)
-    )
-    .map((svgEl: ElementList) =>
-      svgEl.length && svgEl[0].getBoundingClientRect()
-    )
-    .startWith({height: 0, width: 0})
-    .remember();
+    .compose(dropRepeats((a, b: ElementList) => b[0] && b[0].clientHeight))
+    .map((el: ElementList) => el.length && el[0].getBoundingClientRect())
+    .filter(v => v.height && v.width)
+    .startWith({height: 0, width: 0});
 
-  const days$ = props$.map(({selected, currencies}) => {
-    return (currencies[selected] && currencies[selected].days) || [];
-  }).startWith([{high: 0, low: 0, time: new Date()]).remember();
+  const days$ = props$
+    .map(({selected, currencies}) => {
+      return (currencies[selected] && currencies[selected].days) || [];
+    })
+    .filter((v) => v.length)
+    .startWith([{high: 0, low: 0, time: new Date()]);
 
   const scaleX$ = xs.combine(days$, graphBounds$)
     .map(([days, {width}]) => {
-      console.log(days, width)
       const {time: earliest} = days.slice().shift() || {};
       const {time: latest} = days.slice().pop() || {};
 
@@ -94,7 +92,7 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
     .map(([days, {area, line}]) => {
       return h('g', [
         h('path.line', {attrs: {d: line(days)}})
-      ])
+      ]);
     });
 
   const vdom$ = xs.combine(graphBounds$, xAxis$, yAxis$, line$)
@@ -120,6 +118,6 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
   return sinks;
 }
 
-function convertDate(d) {
+function convertDate(d: number): Date {
   return new Date(Math.round(d * 1000));
 }
