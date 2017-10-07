@@ -3,14 +3,11 @@
 import xs, {Stream} from 'xstream';
 import dropRepeats from 'xstream/extra/dropRepeats';
 import {svg, h, h3, div} from '@cycle/dom';
-import {createAxisGenerator} from 'd3-axis-hyperscript';
 import {scaleTime, scaleLinear} from 'd3-scale';
 import {area, line, curveBasis} from 'd3-shape';
 import {BoundingBox, ComponentSources, AppSinks} from '../interfaces';
 
 declare type ElementList = NodeListOf<HTMLElement>;
-
-const axisGenerator: any = createAxisGenerator(h);
 
 export default function Dashboard(sources: ComponentSources): AppSinks {
   const {props$, DOM} = sources;
@@ -23,13 +20,27 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
     )
     .map((svgEl: ElementList) =>
       svgEl.length && svgEl[0].getBoundingClientRect()
-    );
+    )
+    .startWith({height: 0, width: 0})
+    .remember();
 
-  const state$ = xs.combine(props$, graphBounds$)
-    .map(([{selected, currencies}, graphBounds]: [any, any]) => {
-      const {days} = currencies[selected];
-      const {height = 0, width = 0} = graphBounds;
+  const days$ = props$.map(({selected, currencies}) => {
+    return (currencies[selected] && currencies[selected].days) || [];
+  }).startWith([{high: 0, low: 0, time: new Date()]).remember();
 
+  const scaleX$ = xs.combine(days$, graphBounds$)
+    .map(([days, {width}]) => {
+      console.log(days, width)
+      const {time: earliest} = days.slice().shift() || {};
+      const {time: latest} = days.slice().pop() || {};
+
+      return scaleTime()
+        .domain([convertDate(earliest), convertDate(latest)])
+        .range([margin.left, width - margin.right]);
+    });
+
+  const scaleY$ = xs.combine(days$, graphBounds$)
+    .map(([days, {height}]) => {
       const daysByPrice = days
         .slice()
         .sort((a, b) => a.high > b.high);
@@ -39,64 +50,55 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
 
       const buffer = ((low + high) / 2) * 0.10;
 
-      const earliest = days.slice().shift() || {};
-      const latest = days.slice().pop() || {};
-
-      const scaleY = scaleLinear()
+      return scaleLinear()
         .domain([(low - buffer), (high + buffer)])
         .range([margin.bottom, height - margin.top]);
-
-      const scaleX = scaleTime()
-        .domain([new Date(Math.round(earliest.time * 1000)), new Date(Math.round(latest.time * 1000))])
-        .range([margin.left, width - margin.right]);
-
-      return {scaleX, scaleY, days, height, width};
     });
 
-  const xAxis$ = state$.map(({scaleX, days}) => {
-    return scaleX.ticks(days.length)
-      .map(scaleX)
-      .map((value, index) => {
-        const date = (days[index] && new Date(days[index].time * 1000)) || new Date();
-        console.log(date);
-        return h('g.axis-label', {}, [
-          index % 2 !== 0 ? h('text.date-text-label', {
-            attrs: {x: value, y: 10}
-          }, [`${date.getMonth()}/${date.getDate()}`]) : h('text', '')
-        ]);
-      });
+  const xAxis$ = xs.combine(scaleX$, days$)
+    .map(([scaleX, days]) => {
+      return scaleX.ticks(days.length)
+        .map(scaleX)
+        .map((value, index) => {
+          const date = (days[index] && convertDate(days[index].time)) || new Date();
+          return h('g.axis-label', {}, [
+            index % 2 !== 0 ? h('text.date-text-label', {
+              attrs: {x: value, y: 10}
+            }, [`${date.getMonth()}/${date.getDate()}`]) : h('text', '')
+          ]);
+        });
     });
 
-  const yAxis$ = state$.map(({scaleY, height}) => {
-    return scaleY.ticks(10)
-      .map((value) => {
-        return h('g.axis-label', [
-          h('text', {
-            attrs: {x: 10, y: (height - scaleY(value))}
-          }, `${value}`)
-        ]);
-      });
+  const yAxis$ = xs.combine(scaleY$, graphBounds$)
+    .map(([scaleY, {height}]) => {
+      return scaleY.ticks(10)
+        .map((value) => {
+          return h('g.axis-label', [
+            h('text', {
+              attrs: {x: 10, y: (height - scaleY(value))}
+            }, `${value}`)
+          ]);
+        });
     });
 
-  const lineFns$ = state$.map(({scaleX, scaleY}) => ({
+  const lineFns$ = xs.combine(scaleX$, scaleY$).map(([scaleX, scaleY]) => ({
       area: area()
-        .x(d => scaleX(new Date(Math.round(d.time * 1000))))
+        .x(d => scaleX(convertDate(d.time)))
         .y(d => scaleY(d.high)),
       line: line()
-        .x(d => scaleX(new Date(Math.round(d.time * 1000))))
+        .x(d => scaleX(convertDate(d.time)))
         .y(d => scaleY(d.high))
   }));
 
-  const line$ = xs.combine(state$, lineFns$)
-    .map(([{days}, {area, line}]) => {
+  const line$ = xs.combine(days$, lineFns$)
+    .map(([days, {area, line}]) => {
       return h('g', [
         h('path.line', {attrs: {d: line(days)}})
       ])
     });
 
-  const vdom$ = xs.combine(state$, xAxis$, yAxis$, line$)
-    .map(([state, xAxis, yAxis, line]: [any, any, any, any]) => {
-      const {height, width} = state;
+  const vdom$ = xs.combine(graphBounds$, xAxis$, yAxis$, line$)
+    .map(([{height, width}, xAxis, yAxis, line]: [any, any, any, any]) => {
       return div('.dashboard', [
         svg('.dashboard-graph', {
           attrs: { viewBox: `0 0 ${width} ${height}`, preserveAspectRatio: 'xMinYMin slice' }
@@ -116,4 +118,8 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
   };
 
   return sinks;
+}
+
+function convertDate(d) {
+  return new Date(Math.round(d * 1000));
 }
