@@ -12,7 +12,7 @@ declare type ElementList = NodeListOf<HTMLElement>;
 export default function Dashboard(sources: ComponentSources): AppSinks {
   const {props$, DOM} = sources;
 
-  const margin = {top: 60, bottom: 20, right: 100, left: 30};
+  const margin = {top: 40, bottom: 20, right: 100, left: 0};
 
   const graphBounds$ = DOM.select('.dashboard-graph').elements()
     .compose(dropRepeats((a, b: ElementList) => b[0] && b[0].clientHeight))
@@ -21,9 +21,7 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
     .startWith({height: 0, width: 0});
 
   const days$ = props$
-    .map(({selected, currencies}) => {
-      return (currencies[selected] && currencies[selected].days) || [];
-    })
+    .map(({selected, currencies}) => currencies[selected].days)
     .filter((v) => v.length)
     .startWith([{high: 0, low: 0, time: new Date()]);
 
@@ -74,7 +72,7 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
           return h('g.axis-label', [
             h('text', {
               attrs: {x: 10, y: (height - scaleY(value))}
-            }, `${value}`)
+            }, `$${(value / 1000).toFixed(1)}k`)
           ]);
         });
     });
@@ -101,10 +99,7 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
         svg('.dashboard-graph', {
           attrs: { viewBox: `0 0 ${width} ${height}`, preserveAspectRatio: 'xMinYMin slice' }
         }, [
-          h('g.y-axis', {style: {transform: `translateX(${width - 80}px)`}}, [
-            h('text.axis-legend', {attrs: {x: 10, y: margin.top / 2 + 20, height: 16}}, '$'),
-            ...yAxis
-          ]),
+          h('g.y-axis', {style: {transform: `translateX(${width - 80}px)`}}, yAxis),
           h('g.x-axis', {style: {transform: `translateY(${height - 10}px)`}}, xAxis),
           h('g.line', line)
         ])

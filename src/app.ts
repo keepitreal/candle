@@ -6,6 +6,7 @@ import update from 'react-addons-update';
 import Sidebar from './components/sidebar';
 import Dashboard from './components/dashboard';
 import Drawer from './components/drawer';
+import Header from './components/header';
 
 import {
   Sources,
@@ -25,6 +26,7 @@ export function App(sources: AppSources): AppSinks {
 
   const initState$ = xs.of<Reducer>(() => ({
     selected: 'BTC',
+    chartTypes: ['Price', 'Hash Rate', 'Volatility'],
     currencies: {
       BTC: { price: 0, symb: 'BTC', days: [] },
       ETH: { price: 0, symb: 'ETH', days: [] },
@@ -68,11 +70,13 @@ function view(sources: AppSources): Stream<VNode> {
   const sidebar = Sidebar({ DOM, props$: state$});
   const dashboard = Dashboard({ DOM, props$: state$ });
   const drawer = Drawer({ DOM, props$: state$ });
+  const header = Header({ DOM, props$: state$ });
 
-  return xs.combine(state$, sidebar.DOM, dashboard.DOM, drawer.DOM)
-    .map(([state, SidebarEl, DashboardEl, DrawerEl]) => {
+  return xs.combine(state$, sidebar.DOM, dashboard.DOM, drawer.DOM, header.DOM)
+    .map(([state, SidebarEl, DashboardEl, DrawerEl, HeaderEl]) => {
       return div('.view-wrapper', [
-        div('.main-view', [DashboardEl, DrawerEl])
+        SidebarEl,
+        div('.main-view', [HeaderEl, DashboardEl, DrawerEl])
       ]);
     });
 }
