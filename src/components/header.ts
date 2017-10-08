@@ -7,13 +7,12 @@ import {ComponentSources, AppSinks} from '../interfaces';
 export default function Header(sources: ComponentSources): AppSinks {
   const props$ = sources.props$;
 
-  const options$ = props$.map(({chartTypes}) => chartTypes);
-
-  const vdom$ = xs.combine(options$).map(([options]) => {
-    console.log(options);
+  const vdom$ = props$.map(({chartTypes, comparisons}) => {
     return div('.header', [
       span('.header-title', 'Chart Settings'),
-      select('.select', options.map(o => option(o)))
+      select('.select', chartTypes.map(type => option(type))),
+      span('.header-text', 'in'),
+      select('.select', comparisons.map(symb => option(symb)))
     ]);
   });
 

@@ -7,6 +7,7 @@ import Sidebar from './components/sidebar';
 import Dashboard from './components/dashboard';
 import Drawer from './components/drawer';
 import Header from './components/header';
+import {requestHistorical, requestSnapshot} from './requests/crypto';
 
 import {
   Sources,
@@ -22,45 +23,64 @@ import {
 } from './interfaces';
 
 export function App(sources: AppSources): AppSinks {
-  const {socketIO}: AppSources = sources;
+  const {onion: {state$}}: AppSources = sources;
 
   const initState$ = xs.of<Reducer>(() => ({
     selected: 'BTC',
     chartTypes: ['Price', 'Hash Rate', 'Volatility'],
+    comparisons: ['BTC', 'USD', 'LTC', 'GBP', 'EUR'],
     currencies: {
-      BTC: { price: 0, symb: 'BTC', days: [] },
-      ETH: { price: 0, symb: 'ETH', days: [] },
-      LTC: { price: 0, symb: 'LTC', days: [] }
+      BTC: { price: 0, symb: 'BTC', days: [], fullname: 'Bitcoin' },
+      ETH: { price: 0, symb: 'ETH', days: [], fullname: 'Ethereum'},
+      LTC: { price: 0, symb: 'LTC', days: [], fullname: 'Litecoin' },
+      XRP: { price: 0, symb: 'XRB', days: [], fullname: 'Ripple' },
+      DOGE: { price: 0, symb: 'DOGE', days: [], fullname: 'Dogecoin' }
     }
   }));
 
   //const socketData$ = socketIO.get('m')
   //  .map((data: any) => (state: AppState) => state);
 
-  const initialData$: Stream<RequestBody> = sources.onion.state$
+  const fetchHistorical$: Stream<RequestBody> = state$
     .map(({selected}) => selected)
     .take(1)
-    .map(requestData);
+    .map(requestHistorical)
+    .debug(v => console.log(v));
+
+  const fetchSnapshots$: Stream<RequestBody> = state$
+    .map(({currencies}) => {
+      return Object.keys(currencies).map(key => requestSnapshot(key));
+    })
+    .map(pairs => xs.of(...pairs))
+    .flatten()
+    .debug(v => console.log(v));
 
   const outgoingMsg$ = xs.of({
     messageType: 'SubAdd',
     message: {subs: ['2~CCCAGG~BTC~USD']}
   });
 
-  const histoData$: Stream<Reducer> = sources.HTTP.select('histoday')
+  const historical$: Stream<Reducer> = sources.HTTP.select('historical')
     .flatten()
     .map((res: any) => res.body.Data)
     .map<Reducer>((days: any) => (state: AppState) => {
       return update(state, {currencies: {[state.selected]: {days: {$set: days}}}});
     });
 
+  const snapshots$: Stream<Reducer> = sources.HTTP.select('snapshot')
+    .flatten()
+    .map((res) => res.body.Data)
+    .map(<Reducer>(days => state => {
+      return (state) => state;
+    });
+
   const vdom$: Stream<VNode> = view(sources);
 
   return {
     DOM: vdom$,
-    HTTP: xs.merge(initialData$),
+    HTTP: xs.merge(fetchHistorical$, fetchSnapshots$),
    // socketIO: outgoingMsg$,
-    onion: xs.merge(initState$, histoData$)
+    onion: xs.merge(initState$, historical$, snapshots$)
   };
 }
 
@@ -81,13 +101,3 @@ function view(sources: AppSources): Stream<VNode> {
     });
 }
 
-function requestData(symb: string): RequestBody {
-  const now = new Date();
-  const ts = Math.round(now.getTime() / 1000);
-
-  return {
-    url: `https://min-api.cryptocompare.com/data/histoday?fsym=${symb}&tsym=USD&toTs=${ts}&e=CCCAGG`,
-    method: 'GET',
-    category: 'histoday'
-  };
-}
