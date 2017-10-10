@@ -22,11 +22,15 @@ html, body {
   width: 100%;
 }
 
+// Sidebar
+
 .sidebar {
   flex: 1 1 25%;
   max-width: 20rem;
   background-color: $background-dark;
 }
+
+
 
 .main-view {
   display: flex;
@@ -127,6 +131,6 @@ path.line {
   font-weight: bold;
 }
 
-.column-4 {
-  flex: 1 1 25%;
+.column-3 {
+  flex: 1 1 12.5%;
 }
