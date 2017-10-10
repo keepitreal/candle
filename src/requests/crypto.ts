@@ -19,9 +19,9 @@ export function requestCoinList(): RequestBody {
   };
 }
 
-export function requestSnapshot(symb: string): RequestBody {
+export function requestSnapshot(...symbs): RequestBody {
   return {
-    url: `https://min-api.cryptocompare.com/data/price?fsym=${symb}&tsyms=USD`,
+    url: `https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${symbs}&tsyms=USD`,
     method: 'GET',
     category: 'snapshot'
   };

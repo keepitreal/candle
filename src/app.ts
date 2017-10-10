@@ -1,3 +1,5 @@
+import url from 'url';
+import querystring from 'querystring';
 import xs, { Stream } from 'xstream';
 import {VNode, DOMSource} from '@cycle/dom';
 import {HTTPSource} from '@cycle/http';
@@ -30,11 +32,11 @@ export function App(sources: AppSources): AppSinks {
     chartTypes: ['Price', 'Hash Rate', 'Volatility'],
     comparisons: ['BTC', 'USD', 'LTC', 'GBP', 'EUR'],
     currencies: {
-      BTC: { price: 0, symb: 'BTC', days: [], fullname: 'Bitcoin' },
-      ETH: { price: 0, symb: 'ETH', days: [], fullname: 'Ethereum'},
-      LTC: { price: 0, symb: 'LTC', days: [], fullname: 'Litecoin' },
-      XRP: { price: 0, symb: 'XRB', days: [], fullname: 'Ripple' },
-      DOGE: { price: 0, symb: 'DOGE', days: [], fullname: 'Dogecoin' }
+      BTC: { snapshot: {}, symb: 'BTC', days: [], fullname: 'Bitcoin' },
+      ETH: { snapshot: {}, symb: 'ETH', days: [], fullname: 'Ethereum'},
+      LTC: { snapshot: {} ,symb: 'LTC', days: [], fullname: 'Litecoin' },
+      XRP: { snapshot: {}, symb: 'XRB', days: [], fullname: 'Ripple' },
+      DOGE: { snapshot: {}, symb: 'DOGE', days: [], fullname: 'Dogecoin' }
     }
   }));
 
@@ -44,15 +46,12 @@ export function App(sources: AppSources): AppSinks {
   const fetchHistorical$: Stream<RequestBody> = state$
     .map(({selected}) => selected)
     .take(1)
-    .map(requestHistorical)
-    .debug(v => console.log(v));
+    .map(requestHistorical);
 
   const fetchSnapshots$: Stream<RequestBody> = state$
-    .map(({currencies}) => {
-      return Object.keys(currencies).map(key => requestSnapshot(key));
-    })
-    .map(pairs => xs.of(...pairs))
-    .flatten()
+    .map(({currencies}) => Object.keys(currencies))
+    .take(1)
+    .map(requestSnapshot)
     .debug(v => console.log(v));
 
   const outgoingMsg$ = xs.of({
@@ -69,10 +68,17 @@ export function App(sources: AppSources): AppSinks {
 
   const snapshots$: Stream<Reducer> = sources.HTTP.select('snapshot')
     .flatten()
-    .map((res) => res.body.Data)
-    .map(<Reducer>(days => state => {
-      return (state) => state;
-    });
+    .map(({body: {RAW}}) => RAW)
+    .map((symbs) => {
+      const pairs = Object.keys(symbs).reduce((prev, key) => {
+        return prev.concat([[key, symbs[key]]);
+      }, []);
+      return xs.of(...pairs);
+    })
+    .flatten()
+    .map((([symb, snapshot]) => state => {
+      return update(state, {currencies: {[symb]: {snapshot: {$set: snapshot}}}});
+    }));
 
   const vdom$: Stream<VNode> = view(sources);
 
@@ -93,9 +99,10 @@ function view(sources: AppSources): Stream<VNode> {
   const header = Header({ DOM, props$: state$ });
 
   return xs.combine(state$, sidebar.DOM, dashboard.DOM, drawer.DOM, header.DOM)
-    .map(([state, SidebarEl, DashboardEl, DrawerEl, HeaderEl]) => {
+  .map(([state, SidebarEl, DashboardEl, DrawerEl, HeaderEl]) => {
+    console.log(state);
       return div('.view-wrapper', [
-        SidebarEl,
+        //SidebarEl,
         div('.main-view', [HeaderEl, DashboardEl, DrawerEl])
       ]);
     });
