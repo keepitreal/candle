@@ -19,7 +19,7 @@ export default function Drawer(sources: ComponentSources): AppSinks {
           span('.column-3', '24hr High'),
           span('.column-3', '24hr Low'),
           span('.column-3', '24hr Change'),
-          span('.column-3', '24hr Trading Volume'),
+          span('.column-3', '24hr Volume'),
           span('.column-3', 'Market Cap')
         ]),
         ...Object.keys(currencies).map((symb: string) => {
