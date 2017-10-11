@@ -85,11 +85,6 @@ html, body {
   width: 100%;
 }
 
-.drawer {
-  flex: 1 1 40%;
-  background-color: $background-grey;
-}
-
 .axis-label {
   color: white;
 
@@ -110,6 +105,13 @@ path.line {
   fill: none;
 }
 
+// Drawer Styles
+
+.drawer {
+  flex: 1 1 40%;
+  background-color: $background-grey;
+}
+
 .securities {
   margin: 0;
   padding: 0;
@@ -120,11 +122,20 @@ path.line {
     align-items: center;
     height: 4rem;
     padding: 0 1rem;
+    font-size: 15px;
 
     &:nth-child(2n + 1) {
       background-color: white;
     }
   }
+}
+
+.amt {
+  color: red;
+}
+
+.amt-pos {
+  color: green;
 }
 
 .legend {
