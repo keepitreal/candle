@@ -6,7 +6,7 @@ import {HTTPSource} from '@cycle/http';
 import {div} from '@cycle/dom';
 import update from 'react-addons-update';
 import Sidebar from './components/sidebar';
-import Dashboard from './components/dashboard';
+import Graph from './components/graph';
 import Drawer from './components/drawer';
 import Header from './components/header';
 import {requestHistorical, requestSnapshot} from './requests/crypto';
@@ -29,8 +29,6 @@ export function App(sources: AppSources): AppSinks {
 
   const initState$ = xs.of<Reducer>(() => ({
     selected: 'BTC',
-    chartTypes: ['Price', 'Hash Rate', 'Volatility'],
-    comparisons: ['BTC', 'USD', 'LTC', 'GBP', 'EUR'],
     currencies: {
       BTC: { snapshot: {}, symb: 'BTC', days: [], fullname: 'Bitcoin' },
       ETH: { snapshot: {}, symb: 'ETH', days: [], fullname: 'Ethereum'},
@@ -51,8 +49,7 @@ export function App(sources: AppSources): AppSinks {
   const fetchSnapshots$: Stream<RequestBody> = state$
     .map(({currencies}) => Object.keys(currencies))
     .take(1)
-    .map(requestSnapshot)
-    .debug(v => console.log(v));
+    .map(requestSnapshot);
 
   const outgoingMsg$ = xs.of({
     messageType: 'SubAdd',
@@ -94,15 +91,13 @@ function view(sources: AppSources): Stream<VNode> {
   const {onion, DOM} = sources;
   const {state$} = onion;
   const sidebar = Sidebar({ DOM, props$: state$});
-  const dashboard = Dashboard({ DOM, props$: state$ });
+  const graph = Graph({ DOM, props$: state$ });
   const header = Header({ DOM, props$: state$ });
 
-  return xs.combine(state$, sidebar.DOM, dashboard.DOM, header.DOM)
-    .map(([state, SidebarEl, DashboardEl, HeaderEl]) => {
+  return xs.combine(state$, sidebar.DOM, graph.DOM, header.DOM)
+    .map(([state, SidebarEl, GraphEl, HeaderEl]) => {
       return div('.view-wrapper', [
-        //SidebarEl,
-        div('.main-view', [HeaderEl, DashboardEl])
+        div('.main-view', [HeaderEl, GraphEl])
       ]);
     });
 }
-

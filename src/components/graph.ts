@@ -14,7 +14,7 @@ declare type ElementList = NodeListOf<HTMLElement>;
 export default function Dashboard(sources: ComponentSources): AppSinks {
   const {props$, DOM} = sources;
 
-  const margin = {top: 40, bottom: 20, right: 100, left: 0};
+  const margin = {top: 40, bottom: 20, right: 80, left: 30};
 
   const graphBounds$ = DOM.select('.dashboard-graph').elements()
     .compose(dropRepeats((a, b: ElementList) => b[0] && b[0].clientHeight))
@@ -55,32 +55,39 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
         .range([height - margin.top, margin.bottom]);
     });
 
-  const xAxis$ = xs.combine(scaleX$, days$)
-    .map(([scaleX, days]) => {
-      return h('g.x-axis', days.map((day, i) => {
+  const xAxis$ = xs.combine(scaleX$, days$, graphBounds$)
+    .map(([scaleX, days, {width]) => {
+      const labels = days.map((day, i) => {
         const date = convertDate(day.time);
         const x = scaleX(date);
         const y = 10;
 
-        return h('g.axis-label', [
-          h('text.date-text-label', {
-            attrs: {x, y},
-            style: {display: i % 2 === 0 ? 'static' : 'none'}
-          }, moment(date).format('D MMM'))
-        ]);
+        return h('text.axis-label', {
+          attrs: {x, y},
+          style: {display: i % 2 === 0 ? 'static' : 'none'}
+        }, moment(date).format('DD MMM'));
       });
+
+      const border = h('line.border', {attrs: {
+        x1: 0,
+        x2: width - margin.right + 30,
+        y1: -10,
+        y2: -10
+      }});
+
+      return h('g.axis', [border, ...labels]);
     });
 
-  const yAxis$ = xs.combine(scaleY$, days$)
+  const yAxis$ = xs.combine(scaleY$, days$, graphBounds$)
     .map(([scaleY, days]) => {
-      return scaleY.ticks(15)
+      const labels = scaleY.ticks(12)
         .map((value) => {
-          return h('g.axis-label', [
-            h('text', {
-              attrs: {x: 10, y: (scaleY(value))}
-            }, `$${(value / 1000).toFixed(1)}k`)
-          ]);
+          return h('text.axis-label', {
+            attrs: {x: 10, y: (scaleY(value))}
+          }, `$${(value / 1000).toFixed(1)}k`);
         });
+
+      return h('g.axis', [...labels]);
     });
 
   const lineFns$ = xs.combine(scaleX$, scaleY$).map(([scaleX, scaleY]) => ({
@@ -105,10 +112,10 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
         const {high, low, open, close, time} = day;
         const pos = close > open;
         const x = scaleX(convertDate(time));
-        const y1Wick = scaleY(high);
-        const y2Wick = scaleY(low);
-        const y1Body = scaleY(pos ? open : close);
-        const y2Body = scaleY(pos ? close : open);
+        const y1Wick = scaleY(high) || 0;
+        const y2Wick = scaleY(low) || 0;
+        const y1Body = scaleY(pos ? open : close) || 0;
+        const y2Body = scaleY(pos ? close : open) || 0;
 
         return h('g', {attrs: {
           'data-date': convertDate(time).toString(),
@@ -126,16 +133,14 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
     });
 
   const vdom$ = xs.combine(graphBounds$, xAxis$, yAxis$, line$, candlesticks$)
-        .map(([{height, width}, xAxis, yAxis, line, candlesticks]) => {
-          console.log('height: ', height, 'width: ', width);
+    .map(([{height, width}, xAxis, yAxis, line, candlesticks]) => {
       return div('.dashboard', [
         svg('.dashboard-graph', {
           attrs: { viewBox: `0 0 ${width} ${height}`, preserveAspectRatio: 'xMinYMin slice' }
         }, [
-          h('g.y-axis', {style: {transform: `translateX(${width - 80}px)`}}, yAxis),
+          h('g.y-axis', {style: {transform: `translateX(${width - 35}px)`}}, yAxis),
           h('g.x-axis', {style: {transform: `translateY(${height - 15}px)`}}, xAxis),
           candlesticks
-          //h('g.line', line)
         ])
       ]);
     });
