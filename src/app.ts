@@ -95,11 +95,10 @@ function view(sources: AppSources): Stream<VNode> {
   const {state$} = onion;
   const sidebar = Sidebar({ DOM, props$: state$});
   const dashboard = Dashboard({ DOM, props$: state$ });
-  const drawer = Drawer({ DOM, props$: state$ });
   const header = Header({ DOM, props$: state$ });
 
-  return xs.combine(state$, sidebar.DOM, dashboard.DOM, drawer.DOM, header.DOM)
-    .map(([state, SidebarEl, DashboardEl, DrawerEl, HeaderEl]) => {
+  return xs.combine(state$, sidebar.DOM, dashboard.DOM, header.DOM)
+    .map(([state, SidebarEl, DashboardEl, HeaderEl]) => {
       return div('.view-wrapper', [
         //SidebarEl,
         div('.main-view', [HeaderEl, DashboardEl])

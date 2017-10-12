@@ -1,5 +1,7 @@
 'use strict';
 
+import moment from 'moment';
+import cx from 'classnames';
 import xs, {Stream} from 'xstream';
 import dropRepeats from 'xstream/extra/dropRepeats';
 import {svg, h, h3, div} from '@cycle/dom';
@@ -37,41 +39,45 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
 
   const scaleY$ = xs.combine(days$, graphBounds$)
     .map(([days, {height}]) => {
-      const daysByPrice = days
-        .slice()
+      const daysByHigh = days.slice()
         .sort((a, b) => a.high > b.high);
 
-      const {high = 0} = daysByPrice.pop() || {};
-      const {low = 0} = daysByPrice.shift() || {};
+      const daysByLow = days.slice()
+        .sort((a, b) => a.low < b.low);
+
+      const {high = 0} = daysByHigh.pop() || {};
+      const {low = 0} = daysByLow.pop() || {};
 
       const buffer = ((low + high) / 2) * 0.10;
 
       return scaleLinear()
         .domain([(low - buffer), (high + buffer)])
-        .range([margin.bottom, height - margin.top]);
+        .range([height - margin.top, margin.bottom]);
     });
 
   const xAxis$ = xs.combine(scaleX$, days$)
     .map(([scaleX, days]) => {
-      return scaleX.ticks(days.length)
-        .map(scaleX)
-        .map((value, index) => {
-          const date = (days[index] && convertDate(days[index].time)) || new Date();
-          return h('g.axis-label', {}, [
-            index % 2 !== 0 ? h('text.date-text-label', {
-              attrs: {x: value, y: 10}
-            }, [`${date.getMonth()}/${date.getDate()}`]) : h('text', '')
-          ]);
-        });
+      return h('g.x-axis', days.map((day, i) => {
+        const date = convertDate(day.time);
+        const x = scaleX(date);
+        const y = 10;
+
+        return h('g.axis-label', [
+          h('text.date-text-label', {
+            attrs: {x, y},
+            style: {display: i % 2 === 0 ? 'static' : 'none'}
+          }, moment(date).format('D MMM'))
+        ]);
+      });
     });
 
-  const yAxis$ = xs.combine(scaleY$, graphBounds$)
-    .map(([scaleY, {height}]) => {
-      return scaleY.ticks(10)
+  const yAxis$ = xs.combine(scaleY$, days$)
+    .map(([scaleY, days]) => {
+      return scaleY.ticks(15)
         .map((value) => {
           return h('g.axis-label', [
             h('text', {
-              attrs: {x: 10, y: (height - scaleY(value))}
+              attrs: {x: 10, y: (scaleY(value))}
             }, `$${(value / 1000).toFixed(1)}k`)
           ]);
         });
@@ -87,30 +93,47 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
   }));
 
   const line$ = xs.combine(days$, lineFns$)
-    .map(([days, {area, line}]) => {
+    .map(([days, {area, line: lineFn}]) => {
       return h('g', [
-        h('path.line', {attrs: {d: line(days)}})
+        h('path.line', {attrs: {d: lineFn(days)}})
       ]);
     });
 
   const candlesticks$ = xs.combine(days$, scaleX$, scaleY$)
     .map(([days, scaleX, scaleY]) => {
-      console.log(days);
       return h('g.candlesticks', days.map(day => {
-        return h('text.candlestick', {
-          attrs: {x: scaleX(convertDate(day.time)), y: scaleY(day.high)}
-        }, '|');
+        const {high, low, open, close, time} = day;
+        const pos = close > open;
+        const x = scaleX(convertDate(time));
+        const y1Wick = scaleY(high);
+        const y2Wick = scaleY(low);
+        const y1Body = scaleY(pos ? open : close);
+        const y2Body = scaleY(pos ? close : open);
+
+        return h('g', {attrs: {
+          'data-date': convertDate(time).toString(),
+          'data-price': `high ${high}, low ${low}, open ${open}, close ${close}`
+        }}, [
+          h('line.candlestick-wick', {
+            attrs: {x1: x, x2: x, y1: y1Wick, y2: y2Wick}
+          }),
+          h('line.candlestick-body', {
+            style: { stroke: pos ? 'green' : 'red' },
+            attrs: { x1: x, x2: x, y1: y1Body, y2: y2Body}
+          })
+        ]);
       });
     });
 
   const vdom$ = xs.combine(graphBounds$, xAxis$, yAxis$, line$, candlesticks$)
-    .map(([{height, width}, xAxis, yAxis, line, candlesticks]) => {
+        .map(([{height, width}, xAxis, yAxis, line, candlesticks]) => {
+          console.log('height: ', height, 'width: ', width);
       return div('.dashboard', [
         svg('.dashboard-graph', {
           attrs: { viewBox: `0 0 ${width} ${height}`, preserveAspectRatio: 'xMinYMin slice' }
         }, [
           h('g.y-axis', {style: {transform: `translateX(${width - 80}px)`}}, yAxis),
-          h('g.x-axis', {style: {transform: `translateY(${height - 10}px)`}}, xAxis),
+          h('g.x-axis', {style: {transform: `translateY(${height - 15}px)`}}, xAxis),
           candlesticks
           //h('g.line', line)
         ])

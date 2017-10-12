@@ -36,7 +36,7 @@ html, body {
   display: flex;
   flex: 1 1 75%;
   flex-direction: column;
-  background-color: $background-light;
+  //background-color: $background-light;
 }
 
 // Form Styles
@@ -103,6 +103,15 @@ path.line {
   stroke-width: 5px;
   stroke-linejoin: round;
   fill: none;
+}
+
+line.candlestick-wick {
+  stroke: $graph-text;
+  stroke-width: 2;
+}
+
+line.candlestick-body {
+  stroke-width: 8;
 }
 
 // Drawer Styles

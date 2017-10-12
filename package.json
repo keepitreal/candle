@@ -25,6 +25,7 @@
     "d3-axis-hyperscript": "0.0.1",
     "d3-scale": "^1.0.6",
     "d3-shape": "^1.2.0",
+    "moment": "^2.19.1",
     "numeral": "^2.0.6",
     "react-addons-update": "^15.6.2",
     "socket.io-client": "^2.0.3",
