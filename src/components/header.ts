@@ -10,9 +10,9 @@ export default function Header(sources: ComponentSources): AppSinks {
   const vdom$ = props$.map(({chartTypes, comparisons}) => {
     return div('.header', [
       span('.header-title', 'Chart Settings'),
-      select('.select', chartTypes.map(type => option(type))),
-      span('.header-text', 'in'),
-      select('.select', comparisons.map(symb => option(symb)))
+//       select('.select', chartTypes.map(type => option(type))),
+//       span('.header-text', 'in'),
+//       select('.select', comparisons.map(symb => option(symb)))
     ]);
   });
 

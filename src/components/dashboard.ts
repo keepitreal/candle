@@ -93,15 +93,26 @@ export default function Dashboard(sources: ComponentSources): AppSinks {
       ]);
     });
 
-  const vdom$ = xs.combine(graphBounds$, xAxis$, yAxis$, line$)
-    .map(([{height, width}, xAxis, yAxis, line]: [any, any, any, any]) => {
+  const candlesticks$ = xs.combine(days$, scaleX$, scaleY$)
+    .map(([days, scaleX, scaleY]) => {
+      console.log(days);
+      return h('g.candlesticks', days.map(day => {
+        return h('text.candlestick', {
+          attrs: {x: scaleX(convertDate(day.time)), y: scaleY(day.high)}
+        }, '|');
+      });
+    });
+
+  const vdom$ = xs.combine(graphBounds$, xAxis$, yAxis$, line$, candlesticks$)
+    .map(([{height, width}, xAxis, yAxis, line, candlesticks]) => {
       return div('.dashboard', [
         svg('.dashboard-graph', {
           attrs: { viewBox: `0 0 ${width} ${height}`, preserveAspectRatio: 'xMinYMin slice' }
         }, [
           h('g.y-axis', {style: {transform: `translateX(${width - 80}px)`}}, yAxis),
           h('g.x-axis', {style: {transform: `translateY(${height - 10}px)`}}, xAxis),
-          h('g.line', line)
+          candlesticks
+          //h('g.line', line)
         ])
       ]);
     });

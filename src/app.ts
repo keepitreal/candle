@@ -99,11 +99,10 @@ function view(sources: AppSources): Stream<VNode> {
   const header = Header({ DOM, props$: state$ });
 
   return xs.combine(state$, sidebar.DOM, dashboard.DOM, drawer.DOM, header.DOM)
-  .map(([state, SidebarEl, DashboardEl, DrawerEl, HeaderEl]) => {
-    console.log(state);
+    .map(([state, SidebarEl, DashboardEl, DrawerEl, HeaderEl]) => {
       return div('.view-wrapper', [
         //SidebarEl,
-        div('.main-view', [HeaderEl, DashboardEl, DrawerEl])
+        div('.main-view', [HeaderEl, DashboardEl])
       ]);
     });
 }
