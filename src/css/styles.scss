@@ -75,25 +75,34 @@ html, body {
 
 // Dashboard Styles
 
-.dashboard {
+.graph-container {
   flex: 1 1 60%;
   padding: 1rem 1rem 2rem;
 }
 
-.dashboard-graph {
+.graph {
   height: 100%;
   width: 100%;
 }
 
 text.axis-label {
-  fill: $graph-text;
+  fill: black;
   text-anchor: middle;
   font-size: 14px;
 }
 
 line.border {
-  stroke: $graph-text;
-  stroke-width: 0.25;
+  stroke: #f0f0f0;
+  stroke-width: 1px;
+
+  &.border-y {
+    stroke-width: 1px;
+  }
+}
+
+line.tick {
+  stroke: #f0f0f0;
+  stroke-width: 1px;
 }
 
 path.line {
@@ -104,8 +113,8 @@ path.line {
 }
 
 line.candlestick-wick {
-  stroke: $graph-text;
-  stroke-width: 2;
+  stroke: black;
+  stroke-width: 1.5;
 }
 
 line.candlestick-body {
