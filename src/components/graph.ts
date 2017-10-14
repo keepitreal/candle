@@ -8,6 +8,7 @@ import {svg, h, h3, div} from '@cycle/dom';
 import {scaleTime, scaleLinear} from 'd3-scale';
 import {area, line, curveBasis} from 'd3-shape';
 import {BoundingBox, ComponentSources, AppSinks} from '../interfaces';
+import {toDollarThousands} from '../utils/conversions';
 
 declare type ElementList = NodeListOf<HTMLElement>;
 
@@ -81,19 +82,20 @@ export default function Graph(sources: ComponentSources): AppSinks {
 
   const yAxis$ = xs.combine(scaleY$, days$, graphBounds$)
     .map(([scaleY, days, {height, width}]) => {
-      const labels = scaleY.ticks(12)
-        .map((value, i) => {
-          return i % 2 === 0 ?
-            h('text.axis-label', {
-              attrs: {x: 10, y: (scaleY(value))}
-            }, `$${(value / 1000).toFixed(1)}k`) :
-            h('line.tick', {attrs: {x1: -width, x2: -8, y1: scaleY(value), y2: scaleY(value)}});
-        });
+      const numTicks = height / (width / days.length);
+      const tickCoords = getAxisCoords(height, numTicks);
+      const labels = tickCoords.map((coords, i) => {
+       return i % 2 === 0 ?
+         h('text.axis-label', {
+           attrs: {x: 10, y: coords}
+         }, toDollarThousands(scaleY.invert(coords))) :
+         h('line.tick', {attrs: {x1: -width, x2: -8, y1: coords, y2: coords}});
+      });
 
       const border = h('line.border.border-y', {attrs: {
         x1: -15,
         x2: -15,
-        y1: margin.top - 20,
+        y1: 0,
         y2: height - margin.bottom - 5
       }});
 
@@ -157,4 +159,15 @@ export default function Graph(sources: ComponentSources): AppSinks {
 
 function convertDate(d: number): Date {
   return new Date(Math.round(d * 1000));
+}
+
+function getAxisCoords(height: number, num: number) {
+  const coords = [];
+  const incr = height / num;
+
+  for (let i = 0; i < num; i++) {
+    coords.push(i * incr);
+  }
+
+  return coords;
 }

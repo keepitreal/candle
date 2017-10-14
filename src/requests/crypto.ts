@@ -13,9 +13,10 @@ export function requestHistorical(symb: string): RequestBody {
 
 export function requestCoinList(): RequestBody {
   return {
-    url: 'https://min-api.cryptocompare.com/api/data/coinlist/',
+    url: 'https://www.cryptocompare.com/api/data/coinlist/',
     method: 'GET',
-    category: 'coinlist'
+    category: 'coinlist',
+    withCredentials: true
   };
 }
 

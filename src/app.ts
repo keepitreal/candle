@@ -9,7 +9,7 @@ import Sidebar from './components/sidebar';
 import Graph from './components/graph';
 import Drawer from './components/drawer';
 import Header from './components/header';
-import {requestHistorical, requestSnapshot} from './requests/crypto';
+import {requestHistorical, requestCoinList, requestSnapshot} from './requests/crypto';
 
 import {
   Sources,
@@ -51,6 +51,8 @@ export function App(sources: AppSources): AppSinks {
     .take(1)
     .map(requestSnapshot);
 
+  const fetchCoinList$: Stream<RequestBody> = xs.of(requestCoinList());
+
   const outgoingMsg$ = xs.of({
     messageType: 'SubAdd',
     message: {subs: ['2~CCCAGG~BTC~USD']}
@@ -77,11 +79,18 @@ export function App(sources: AppSources): AppSinks {
       return update(state, {currencies: {[symb]: {snapshot: {$set: snapshot}}}});
     }));
 
+  const coinList$: Stream<Reducer> = sources.HTTP.select('coinlist')
+    .flatten()
+    .map((res) => {
+      console.log(res);
+      return (state) => state;
+    });
+
   const vdom$: Stream<VNode> = view(sources);
 
   return {
     DOM: vdom$,
-    HTTP: xs.merge(fetchHistorical$, fetchSnapshots$),
+    HTTP: xs.merge(fetchHistorical$, fetchSnapshots$, fetchCoinList$),
    // socketIO: outgoingMsg$,
     onion: xs.merge(initState$, historical$, snapshots$)
   };
@@ -90,14 +99,14 @@ export function App(sources: AppSources): AppSinks {
 function view(sources: AppSources): Stream<VNode> {
   const {onion, DOM} = sources;
   const {state$} = onion;
-  const sidebar = Sidebar({ DOM, props$: state$});
   const graph = Graph({ DOM, props$: state$ });
   const header = Header({ DOM, props$: state$ });
 
-  return xs.combine(state$, sidebar.DOM, graph.DOM, header.DOM)
-    .map(([state, SidebarEl, GraphEl, HeaderEl]) => {
+  return xs.combine(state$, graph.DOM, header.DOM)
+    .map(([state, GraphEl, HeaderEl]) => {
       return div('.view-wrapper', [
-        div('.main-view', [HeaderEl, GraphEl])
+        HeaderEl,
+        div('.main-view', [GraphEl])
       ]);
     });
 }
