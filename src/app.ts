@@ -90,7 +90,7 @@ export function App(sources: AppSources): AppSinks {
 
   return {
     DOM: vdom$,
-    HTTP: xs.merge(fetchHistorical$, fetchSnapshots$, fetchCoinList$),
+    HTTP: xs.merge(fetchHistorical$, fetchCoinList$),
    // socketIO: outgoingMsg$,
     onion: xs.merge(initState$, historical$, snapshots$)
   };

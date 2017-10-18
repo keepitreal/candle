@@ -5,7 +5,8 @@ export function requestHistorical(symb: string): RequestBody {
   const ts = Math.round(now.getTime() / 1000);
 
   return {
-    url: `https://min-api.cryptocompare.com/data/histoday?fsym=${symb}&tsym=USD&toTs=${ts}&e=CCCAGG`,
+    //    url: `https://min-api.cryptocompare.com/data/histoday?fsym=${symb}&tsym=USD&toTs=${ts}&e=CCCAGG`,
+    url: './offline/histoday.json',
     method: 'GET',
     category: 'historical'
   };
