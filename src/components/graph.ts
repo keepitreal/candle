@@ -82,6 +82,7 @@ export default function Graph(sources: ComponentSources): AppSinks {
 
   const yAxis$ = xs.combine(scaleY$, days$, graphBounds$)
     .map(([scaleY, days, {height, width}]) => {
+      console.log(days);
       const numTicks = height / (width / days.length);
       const tickCoords = getAxisCoords(height, numTicks);
       const labels = tickCoords.map((coords, i) => {

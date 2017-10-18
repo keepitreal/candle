@@ -70,7 +70,7 @@ export function App(sources: AppSources): AppSinks {
     .map(({body: {RAW}}) => RAW)
     .map((symbs) => {
       const pairs = Object.keys(symbs).reduce((prev, key) => {
-        return prev.concat([[key, symbs[key]]);
+        return prev.concat([[key, symbs[key],]);
       }, []);
       return xs.of(...pairs);
     })
