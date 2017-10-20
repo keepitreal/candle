@@ -14,7 +14,8 @@ export function requestHistorical(symb: string): RequestBody {
 
 export function requestCoinList(): RequestBody {
   return {
-    url: 'https://www.cryptocompare.com/api/data/coinlist/',
+    //url: 'https://www.cryptocompare.com/api/data/coinlist/',
+    url: './offline/coinlist.json',
     method: 'GET',
     category: 'coinlist',
     withCredentials: true

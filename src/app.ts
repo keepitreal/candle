@@ -29,6 +29,8 @@ export function App(sources: AppSources): AppSinks {
 
   const initState$ = xs.of<Reducer>(() => ({
     selected: 'BTC',
+    coinlist: {},
+    symbols: [],
     currencies: {
       BTC: { snapshot: {}, symb: 'BTC', days: [], fullname: 'Bitcoin' },
       ETH: { snapshot: {}, symb: 'ETH', days: [], fullname: 'Ethereum'},
@@ -70,7 +72,7 @@ export function App(sources: AppSources): AppSinks {
     .map(({body: {RAW}}) => RAW)
     .map((symbs) => {
       const pairs = Object.keys(symbs).reduce((prev, key) => {
-        return prev.concat([[key, symbs[key],]);
+        return prev.concat([[key, symbs[key]]);
       }, []);
       return xs.of(...pairs);
     })
@@ -79,20 +81,21 @@ export function App(sources: AppSources): AppSinks {
       return update(state, {currencies: {[symb]: {snapshot: {$set: snapshot}}}});
     }));
 
-  const coinList$: Stream<Reducer> = sources.HTTP.select('coinlist')
+  const coinlist$: Stream<Reducer> = sources.HTTP.select('coinlist')
     .flatten()
-    .map((res) => {
-      console.log(res);
-      return (state) => state;
-    });
+    .map((res) => res.body.Data)
+    .map((coins) => state => update(state, {
+      coinlist: {$set: coins},
+      symbols: {$set: Object.keys(coins)}
+    }));
 
-  const vdom$: Stream<VNode> = view(sources);
+  const vdom$ = view(sources);
 
   return {
     DOM: vdom$,
     HTTP: xs.merge(fetchHistorical$, fetchCoinList$),
    // socketIO: outgoingMsg$,
-    onion: xs.merge(initState$, historical$, snapshots$)
+    onion: xs.merge(initState$, historical$, coinlist$, snapshots$)
   };
 }
 
@@ -102,11 +105,13 @@ function view(sources: AppSources): Stream<VNode> {
   const graph = Graph({ DOM, props$: state$ });
   const header = Header({ DOM, props$: state$ });
 
-  return xs.combine(state$, graph.DOM, header.DOM)
+  const vdom$ = xs.combine(state$, graph.DOM, header.DOM)
     .map(([state, GraphEl, HeaderEl]) => {
       return div('.view-wrapper', [
         HeaderEl,
         div('.main-view', [GraphEl])
       ]);
     });
+
+  return vdom$;
 }
