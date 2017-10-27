@@ -31,6 +31,7 @@ export function App(sources: AppSources): AppSinks {
     selected: 'BTC',
     coinlist: {},
     symbols: [],
+    searchTerm: '',
     currencies: {
       BTC: { snapshot: {}, symb: 'BTC', days: [], fullname: 'Bitcoin' },
       ETH: { snapshot: {}, symb: 'ETH', days: [], fullname: 'Ethereum'},
@@ -43,11 +44,6 @@ export function App(sources: AppSources): AppSinks {
   //const socketData$ = socketIO.get('m')
   //  .map((data: any) => (state: AppState) => state);
 
-  const fetchHistorical$: Stream<RequestBody> = state$
-    .map(({selected}) => selected)
-    .take(1)
-    .map(requestHistorical);
-
   const fetchSnapshots$: Stream<RequestBody> = state$
     .map(({currencies}) => Object.keys(currencies))
     .take(1)
@@ -59,13 +55,6 @@ export function App(sources: AppSources): AppSinks {
     messageType: 'SubAdd',
     message: {subs: ['2~CCCAGG~BTC~USD']}
   });
-
-  const historical$: Stream<Reducer> = sources.HTTP.select('historical')
-    .flatten()
-    .map((res: any) => res.body.Data)
-    .map<Reducer>((days: any) => (state: AppState) => {
-      return update(state, {currencies: {[state.selected]: {days: {$set: days}}}});
-    });
 
   const snapshots$: Stream<Reducer> = sources.HTTP.select('snapshot')
     .flatten()
@@ -89,21 +78,21 @@ export function App(sources: AppSources): AppSinks {
       symbols: {$set: Object.keys(coins)}
     }));
 
-  const vdom$ = view(sources);
+  const {vdom$, vstate$, vhttp$} = view(sources);
 
   return {
     DOM: vdom$,
-    HTTP: xs.merge(fetchHistorical$, fetchCoinList$),
+    HTTP: xs.merge(fetchCoinList$, vhttp$),
    // socketIO: outgoingMsg$,
-    onion: xs.merge(initState$, historical$, coinlist$, snapshots$)
+    onion: xs.merge(initState$, coinlist$, snapshots$, vstate$)
   };
 }
 
 function view(sources: AppSources): Stream<VNode> {
-  const {onion, DOM} = sources;
+  const {onion, DOM, HTTP} = sources;
   const {state$} = onion;
   const graph = Graph({ DOM, props$: state$ });
-  const header = Header({ DOM, props$: state$ });
+  const header = Header({ DOM, HTTP, props$: state$ });
 
   const vdom$ = xs.combine(state$, graph.DOM, header.DOM)
     .map(([state, GraphEl, HeaderEl]) => {
@@ -113,5 +102,8 @@ function view(sources: AppSources): Stream<VNode> {
       ]);
     });
 
-  return vdom$;
+  const vstate$ = xs.merge(header.onion);
+  const vhttp$ = xs.merge(header.HTTP);
+
+  return {vdom$, vstate$, vhttp$};
 }
