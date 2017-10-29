@@ -50,14 +50,14 @@ export default function Header(sources: ComponentSources): AppSinks {
 
   const select$ = xs.combine(inputChange$, selecting$, suggestions$)
     .filter(([{keyCode}]) => keyCode === 13)
-    .startWith(0)
+    .startWith(0);
 
   const vdom$ = xs.combine(props$, suggestions$, selecting$, select$)
     .map(([{searchTerm}, suggestions, selecting, select]) => {
       return div('.header', [
         div('.header-title', 'CX'),
         div('.header-search-container', [
-          input('.header-search', {attrs:{value: searchTerm, placeholder: 'Search by symbol or name'}}),
+          input('.header-search', {attrs: {value: searchTerm, placeholder: 'Search by symbol or name'}}),
           suggestions.length ? div('.header-suggestions', suggestions.map((suggestion, i) => {
             return div('.suggestion', {
               style: {backgroundColor: i === selecting ? '#f0f0f0' : 'transparent'}
@@ -83,10 +83,12 @@ function mapKeyCodeToDirection(acc: number, keyCode: number): number {
       return acc === 4 ? acc : acc + 1;
     case 38: // up
       return acc === 0 ? acc : acc - 1;
+    default:
+      return acc;
   }
 }
 
-function getKeycode(e) {
+function getKeycode(e: KeyboardEvent): number {
   e.preventDefault();
   return e.keyCode;
 }

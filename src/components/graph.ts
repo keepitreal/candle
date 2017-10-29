@@ -4,11 +4,13 @@ import moment from 'moment';
 import cx from 'classnames';
 import xs, {Stream} from 'xstream';
 import dropRepeats from 'xstream/extra/dropRepeats';
+import throttle from 'xstream/extra/throttle';
 import {svg, h, h3, div} from '@cycle/dom';
 import {scaleTime, scaleLinear} from 'd3-scale';
 import {area, line, curveBasis} from 'd3-shape';
 import {BoundingBox, ComponentSources, AppSinks} from '../interfaces';
 import {toDollarThousands} from '../utils/conversions';
+import {getCursorPos} from '../utils/events';
 
 declare type ElementList = NodeListOf<HTMLElement>;
 
@@ -17,11 +19,13 @@ export default function Graph(sources: ComponentSources): AppSinks {
 
   const margin = {top: 40, bottom: 20, right: 80, left: 30};
 
-  const graphBounds$ = DOM.select('.graph').elements()
-    .compose(dropRepeats((a, b: ElementList) => b[0] && b[0].clientHeight))
+  const graph$ = DOM.select('.graph').elements()
+    .compose(dropRepeats((a, b: ElementList) => b[0] && b[0].clientHeight));
+
+  const graphBounds$ = graph$
     .map((el: ElementList) => el.length && el[0].getBoundingClientRect())
     .filter(v => v.height && v.width)
-    .startWith({height: 0, width: 0});
+    .startWith({height: 0, width: 0, top: 0, left: 0});
 
   const days$ = props$
     .map(({selected, currencies}) => currencies[selected].days)
@@ -36,7 +40,7 @@ export default function Graph(sources: ComponentSources): AppSinks {
       return scaleTime()
         .domain([convertDate(earliest), convertDate(latest)])
         .range([margin.left, width - margin.right]);
-    });
+    }).startWith(x => x);
 
   const scaleY$ = xs.combine(days$, graphBounds$)
     .map(([days, {height}]) => {
@@ -54,7 +58,7 @@ export default function Graph(sources: ComponentSources): AppSinks {
       return scaleLinear()
         .domain([(low - buffer), (high + buffer)])
         .range([height - margin.top, margin.bottom]);
-    });
+    }).startWith(x => x)
 
   const xAxis$ = xs.combine(scaleX$, days$, graphBounds$)
     .map(([scaleX, days, {height, width]) => {
@@ -66,8 +70,8 @@ export default function Graph(sources: ComponentSources): AppSinks {
         return i % 2 === 0 ? h('text.axis-label', {
           attrs: {x, y},
           style: {display: i % 2 === 0 ? 'static' : 'none'}
-        }, moment(date).format('DD MMM')) :
-        h('line.tick', {attrs: {x1: x, x2: x, y1: -height, y2: -3}});
+        }, formatDate(date)) :
+          h('line.tick', {attrs: {x1: x, x2: x, y1: -height, y2: -3}});
       });
 
       const border = h('line.border', {attrs: {
@@ -85,11 +89,11 @@ export default function Graph(sources: ComponentSources): AppSinks {
       const numTicks = height / (width / days.length);
       const tickCoords = getAxisCoords(height, numTicks);
       const labels = tickCoords.map((coords, i) => {
-       return i % 2 === 0 ?
-         h('text.axis-label', {
-           attrs: {x: 10, y: coords}
-         }, toDollarThousands(scaleY.invert(coords))) :
-         h('line.tick', {attrs: {x1: -width, x2: -8, y1: coords, y2: coords}});
+        return i % 2 === 0 ?
+          h('text.axis-label', {
+            attrs: {x: 10, y: coords}
+          }, toDollarThousands(scaleY.invert(coords))) :
+          h('line.tick', {attrs: {x1: -width, x2: -8, y1: coords, y2: coords}});
       });
 
       const border = h('line.border.border-y', {attrs: {
@@ -103,12 +107,12 @@ export default function Graph(sources: ComponentSources): AppSinks {
     });
 
   const lineFns$ = xs.combine(scaleX$, scaleY$).map(([scaleX, scaleY]) => ({
-      area: area()
-        .x(d => scaleX(convertDate(d.time)))
-        .y(d => scaleY(d.high)),
-      line: line()
-        .x(d => scaleX(convertDate(d.time)))
-        .y(d => scaleY(d.high))
+    area: area()
+    .x(d => scaleX(convertDate(d.time)))
+    .y(d => scaleY(d.high)),
+    line: line()
+    .x(d => scaleX(convertDate(d.time)))
+    .y(d => scaleY(d.high))
   }));
 
   const line$ = xs.combine(days$, lineFns$)
@@ -141,13 +145,41 @@ export default function Graph(sources: ComponentSources): AppSinks {
           })
         ]);
       });
-    });
+    }));
 
-  const vdom$ = xs.combine(graphBounds$, xAxis$, yAxis$, candlesticks$)
-    .map(([{height, width}, xAxis, yAxis, candlesticks]) => {
+  const guidesVisible$ = xs.merge(
+    DOM.select('.graph').events('mouseenter'),
+    DOM.select('.graph').events('mouseleave')
+  ).map((ev) => {
+    return ev.type === 'mouseenter';
+  }).startWith(false);
+
+  const guides$ = DOM.select('.graph').events('mousemove')
+    .map((ev) => xs.combine(xs.of(ev), scaleX$, scaleY$, graphBounds$, guidesVisible$))
+    .flatten()
+    .map(([ev, scaleX, scaleY, {top, left, height, width}, visible]) => {
+      const x = ev.clientX - left;
+      const y = ev.clientY - top;
+      const price = toDollarThousands(scaleY.invert(y));
+      const date = formatDate(scaleX.invert(x));
+      const padding = 5;
+
+      return visible ? h('g', [
+        h('line.guideline.horiz', {attrs: {x1: x, x2: x, y1: 0, y2: height}}),
+        h('line.guideline.vert', {attrs: {x1: 0, x2: width, y1: y: y2: y}}),
+        h('rect.guideline-label', {attrs: {x: x - 28, y: height - 26, height: 50, width: 56}}),
+        h('rect.guideline-label', {attrs: {x: width  - margin.right / 2 - 10, y: y - 16, height: 25, width: 70}}),
+        h('text.guideline-text.horiz', {attrs: {x, y: height - 5}}, date),
+        h('text.guideline-text.vert', {attrs: {x: width - (margin.right / 2) - 6, y: y + 2}}, price)
+      ]) : h('g');
+    }).startWith(h('g'));
+
+  const vdom$ = xs.combine(graphBounds$, xAxis$, yAxis$, candlesticks$, guides$, guidesVisible$)
+    .drop(1)
+    .map(([{height, width}, xAxis, yAxis, candlesticks, guides]) => {
       return svg('.graph', {
         attrs: { viewBox: `0 0 ${width} ${height}`, preserveAspectRatio: 'xMinYMin slice' }
-      }, [yAxis, xAxis, candlesticks]);
+      }, [yAxis, xAxis, candlesticks, guides]);
     });
 
   const sinks = {
@@ -159,6 +191,10 @@ export default function Graph(sources: ComponentSources): AppSinks {
 
 function convertDate(d: number): Date {
   return new Date(Math.round(d * 1000));
+}
+
+function formatDate(d: Date): string {
+  return moment(d).format('DD MMM');
 }
 
 function getAxisCoords(height: number, num: number): Array<number> {

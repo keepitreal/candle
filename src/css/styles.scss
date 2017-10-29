@@ -127,6 +127,25 @@ line.candlestick-body {
   stroke-width: 10;
 }
 
+line.guideline {
+  stroke-width: 1;
+  stroke: #333;
+}
+
+rect.guideline-label {
+  fill: grey;
+}
+
+text.guideline-text {
+  text-anchor: middle;
+  fill: white;
+  font-size: 14px;
+}
+
+text.guideline-text.vert {
+  text-anchor: start;
+}
+
 // Drawer Styles
 
 .drawer {
