@@ -1,6 +1,8 @@
 $background-dark: #272D35;
 $background-light: #434953;
 $background-grey: #f6f6f6;
+$offset-grey: #f0f0f0;
+$offset-grey-dark: darken($offset-grey, 10%);
 $graph-text: lighten($background-light, 30%);
 
 html, body {
@@ -42,7 +44,6 @@ html, body {
   justify-content: space-between;
   align-items: center;
   position: relative;
-  border-bottom: 1px solid #f0f0f0;
 }
 
 .header-title {
@@ -60,7 +61,7 @@ html, body {
   right: 0;
   top: calc(100% + 0.5rem);
   background-color: white;
-  border: 1px solid #f0f0f0;
+  border: 1px solid $offset-grey;
   border-radius: 4px;
   box-shadow: 1px 1px 1px 1px rgba(0, 0, 0, 0.05);
 }
@@ -72,11 +73,44 @@ html, body {
 .header-search {
   min-width: 30rem;
   padding: 0.7rem;
-  background-color: #f0f0f0;
+  background-color: $offset-grey;
   border-radius: 4px;
   border: none;
   outline: none;
   font-size: 16px;
+}
+
+// Heading Styles
+
+.tabs {
+  margin: 0 -1rem;
+  padding-top: 2rem;
+  box-shadow: inset 0px -10px 18px 0px rgba(100,100,100,0.1);
+}
+
+.tab {
+  display: inline-block;
+  padding: 0.7rem 2rem 0.7rem 1rem;
+  background-color: white;
+  margin-bottom: -1px;
+  border-top-right-radius: 30px;
+  box-shadow: 5px -5px 21px -1px rgba(100,100,100,0.1);
+}
+
+.heading-title {
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 24px;
+}
+
+.heading-prices {
+  font-size: 14px;
+  line-height: 26px;
+}
+
+.heading-change {
+  color: darken(#00EE00, 10%);
+  margin-left: 0.5rem;
 }
 
 // Graph Styles
@@ -98,7 +132,7 @@ text.axis-label {
 }
 
 line.border {
-  stroke: #f0f0f0;
+  stroke: $offset-grey-dark;
   stroke-width: 1px;
 
   &.border-y {
@@ -107,7 +141,7 @@ line.border {
 }
 
 line.tick {
-  stroke: #f0f0f0;
+  stroke: $offset-grey;
   stroke-width: 1px;
 }
 
@@ -129,7 +163,7 @@ line.candlestick-body {
 
 line.guideline {
   stroke-width: 1;
-  stroke: #333;
+  stroke: $offset-grey-dark;
 }
 
 rect.guideline-label {

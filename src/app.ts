@@ -9,6 +9,7 @@ import Sidebar from './components/sidebar';
 import Graph from './components/graph';
 import Drawer from './components/drawer';
 import Header from './components/header';
+import Heading from './components/heading';
 import {requestHistorical, requestCoinList, requestSnapshot} from './requests/crypto';
 
 import {
@@ -91,14 +92,15 @@ export function App(sources: AppSources): AppSinks {
 function view(sources: AppSources): Stream<VNode> {
   const {onion, DOM, HTTP} = sources;
   const {state$} = onion;
-  const graph = Graph({ DOM, props$: state$ });
-  const header = Header({ DOM, HTTP, props$: state$ });
+  const graph = Graph({DOM, props$: state$});
+  const header = Header({DOM, HTTP, props$: state$});
+  const heading = Heading({DOM, state$});
 
-  const vdom$ = xs.combine(state$, graph.DOM, header.DOM)
-    .map(([state, GraphEl, HeaderEl]) => {
+  const vdom$ = xs.combine(state$, graph.DOM, header.DOM, heading.DOM)
+    .map(([state, GraphEl, HeaderEl, HeadingEl]) => {
       return div('.view-wrapper', [
         HeaderEl,
-        div('.main-view', [GraphEl])
+        div('.main-view', [HeadingEl, GraphEl])
       ]);
     });
 
