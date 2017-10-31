@@ -46,7 +46,7 @@ export function App(sources: AppSources): AppSinks {
   //  .map((data: any) => (state: AppState) => state);
 
   const fetchSnapshots$: Stream<RequestBody> = state$
-    .map(({currencies}) => Object.keys(currencies))
+    .map(({selected}) => selected)
     .take(1)
     .map(requestSnapshot);
 
@@ -83,7 +83,7 @@ export function App(sources: AppSources): AppSinks {
 
   return {
     DOM: vdom$,
-    HTTP: xs.merge(fetchCoinList$, vhttp$),
+    HTTP: xs.merge(fetchCoinList$, fetchSnapshots$, vhttp$),
    // socketIO: outgoingMsg$,
     onion: xs.merge(initState$, coinlist$, snapshots$, vstate$)
   };
