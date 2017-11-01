@@ -4,6 +4,7 @@ import xs, { Stream } from 'xstream';
 import {VNode, DOMSource} from '@cycle/dom';
 import {HTTPSource} from '@cycle/http';
 import {div} from '@cycle/dom';
+import dropRepeats from 'xstream/extra/dropRepeats';
 import update from 'react-addons-update';
 import Sidebar from './components/sidebar';
 import Graph from './components/graph';
@@ -51,6 +52,14 @@ export function App(sources: AppSources): AppSinks {
     .map(requestSnapshot);
 
   const fetchCoinList$: Stream<RequestBody> = xs.of(requestCoinList());
+  const fetchHistorical$: Stream<RequestBody> = xs.of(requestHistorical('BTC'));
+
+  const historical$: Stream<Reducer> = sources.HTTP.select('historical')
+    .flatten()
+    .map((res: any) => res.body.Data)
+    .map<Reducer>((days: any) => (state: AppState) => {
+      return update(state, {currencies: {[state.selected]: {days: {$set: days}}}});
+    });
 
   const outgoingMsg$ = xs.of({
     messageType: 'SubAdd',
@@ -71,6 +80,15 @@ export function App(sources: AppSources): AppSinks {
       return update(state, {currencies: {[symb]: {snapshot: {$set: snapshot}}}});
     }));
 
+  const selectedChanged$ = state$.map(({selected}) => selected)
+    .compose(dropRepeats((a, b) => a === b));
+
+  const updateSelected$ = selectedChanged$
+    .map(() => fetchSnapshots$).flatten();
+
+  const updateHistorical$ = selectedChanged$
+    .map(requestHistorical);
+
   const coinlist$: Stream<Reducer> = sources.HTTP.select('coinlist')
     .flatten()
     .map((res) => res.body.Data)
@@ -79,13 +97,25 @@ export function App(sources: AppSources): AppSinks {
       symbols: {$set: Object.keys(coins)}
     }));
 
-  const {vdom$, vstate$, vhttp$} = view(sources);
+  const {vdom$, vstate$} = view(sources);
 
   return {
     DOM: vdom$,
-    HTTP: xs.merge(fetchCoinList$, fetchSnapshots$, vhttp$),
+    HTTP: xs.merge(
+      fetchCoinList$,
+      fetchHistorical$,
+      fetchSnapshots$,
+      updateSelected$,
+      updateHistorical$
+    ),
    // socketIO: outgoingMsg$,
-    onion: xs.merge(initState$, coinlist$, snapshots$, vstate$)
+    onion: xs.merge(
+      initState$,
+      historical$,
+      coinlist$,
+      snapshots$,
+      vstate$
+    )
   };
 }
 
@@ -93,7 +123,7 @@ function view(sources: AppSources): Stream<VNode> {
   const {onion, DOM, HTTP} = sources;
   const {state$} = onion;
   const graph = Graph({DOM, props$: state$});
-  const header = Header({DOM, HTTP, props$: state$});
+  const header = Header({DOM, HTTP, state$});
   const heading = Heading({DOM, state$});
 
   const vdom$ = xs.combine(state$, graph.DOM, header.DOM, heading.DOM)
@@ -105,7 +135,6 @@ function view(sources: AppSources): Stream<VNode> {
     });
 
   const vstate$ = xs.merge(header.onion);
-  const vhttp$ = xs.merge(header.HTTP);
 
-  return {vdom$, vstate$, vhttp$};
+  return {vdom$, vstate$};
 }

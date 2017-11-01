@@ -3,12 +3,13 @@
 import xs from 'xstream';
 import cx from 'classnames';
 import {div, span, input} from '@cycle/dom';
+import dropRepeats from 'xstream/extra/dropRepeats';
 import {ComponentSources, AppSinks} from '../interfaces';
 import {requestHistorical} from '../requests/crypto';
 import update from 'react-addons-update';
 
 export default function Header(sources: ComponentSources): AppSinks {
-  const props$ = sources.props$;
+  const state$ = sources.state$;
 
   const fetchHistorical$: Stream<RequestBody> = xs.of(requestHistorical('BTC'));
 
@@ -30,13 +31,10 @@ export default function Header(sources: ComponentSources): AppSinks {
 
   const searchTerm$ = inputChange$
     .map(({target: {value}}) => value)
-    .map(v => s => update(s, {searchTerm: {$set: v}}));
+    .startWith('');
 
-  const escapeSearch$ = input$.events('blur')
-    .map(v => s => update(s, {searchTerm: {$set: ''}}));
-
-  const suggestions$ = xs.combine(props$)
-    .map(([{coinlist, searchTerm, symbols}]) => {
+  const suggestions$ = xs.combine(searchTerm$, state$)
+    .map(([searchTerm, {coinlist, symbols}]) => {
       const term = searchTerm.toUpperCase();
       const suggestions = term.length > 1 ? 
         symbols.filter(symb => symb.indexOf(term.toUpperCase()) > -1) :
@@ -48,12 +46,16 @@ export default function Header(sources: ComponentSources): AppSinks {
         .slice(0, 5);
     });
 
-  const select$ = xs.combine(inputChange$, selecting$, suggestions$)
+  const selected$ = xs.combine(inputChange$, selecting$, suggestions$)
+    .compose(dropRepeats(([{keyCode: a}], [{keyCode: b}]) => a === b))
     .filter(([{keyCode}]) => keyCode === 13)
-    .startWith(0);
+    .map(([,selecting, suggestions]) => state => {
+      console.log(state);
+      return update(state, {selected: {$set: suggestions[selecting].Name}});
+    }))
 
-  const vdom$ = xs.combine(props$, suggestions$, selecting$, select$)
-    .map(([{searchTerm}, suggestions, selecting, select]) => {
+  const vdom$ = xs.combine(searchTerm$, suggestions$, selecting$)
+    .map(([searchTerm, suggestions, selecting]) => {
       return div('.header', [
         div('.header-title', 'CX'),
         div('.header-search-container', [
@@ -70,8 +72,7 @@ export default function Header(sources: ComponentSources): AppSinks {
 
   const sinks = {
     DOM: vdom$,
-    HTTP: fetchHistorical$,
-    onion: xs.merge(historical$, searchTerm$, escapeSearch$)
+    onion: selected$
   };
 
   return sinks;
