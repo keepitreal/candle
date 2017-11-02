@@ -23,6 +23,7 @@ export default function Header(sources: ComponentSources): AppSinks {
   const input$ = sources.DOM.select('.header-search');
 
   const inputChange$ = input$.events('keyup');
+  const blur$ = xs.merge(input$.events('blur'), inputChange$.map(getKeycode).filter(code => code === 27));
 
   const selecting$ = inputChange$
     .map(getKeycode)
@@ -33,7 +34,11 @@ export default function Header(sources: ComponentSources): AppSinks {
     .map(({target: {value}}) => value)
     .startWith('');
 
-  const suggestions$ = xs.combine(searchTerm$, state$)
+  const onBlur$ = blur$.map(() => '').startWith('');
+
+  const inputValue$ = xs.merge(searchTerm$, onBlur$).startWith('');
+
+  const suggestions$ = xs.combine(inputValue$, state$)
     .map(([searchTerm, {coinlist, symbols}]) => {
       const term = searchTerm.toUpperCase();
       const suggestions = term.length > 1 ? 
@@ -50,16 +55,15 @@ export default function Header(sources: ComponentSources): AppSinks {
     .compose(dropRepeats(([{keyCode: a}], [{keyCode: b}]) => a === b))
     .filter(([{keyCode}]) => keyCode === 13)
     .map(([,selecting, suggestions]) => state => {
-      console.log(state);
       return update(state, {selected: {$set: suggestions[selecting].Name}});
     }))
 
-  const vdom$ = xs.combine(searchTerm$, suggestions$, selecting$)
-    .map(([searchTerm, suggestions, selecting]) => {
+  const vdom$ = xs.combine(inputValue$, suggestions$, selecting$)
+    .map(([inputValue, suggestions, selecting]) => {
       return div('.header', [
         div('.header-title', 'CX'),
         div('.header-search-container', [
-          input('.header-search', {attrs: {value: searchTerm, placeholder: 'Search by symbol or name'}}),
+          input('.header-search', {attrs: {type: 'text', value: inputValue, placeholder: 'Search by symbol or name'}}),
           suggestions.length ? div('.header-suggestions', suggestions.map((suggestion, i) => {
             return div('.suggestion', {
               style: {backgroundColor: i === selecting ? '#f0f0f0' : 'transparent'}
