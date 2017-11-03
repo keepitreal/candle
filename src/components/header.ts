@@ -4,9 +4,10 @@ import xs from 'xstream';
 import cx from 'classnames';
 import {div, span, input} from '@cycle/dom';
 import dropRepeats from 'xstream/extra/dropRepeats';
+import update from 'react-addons-update';
 import {ComponentSources, AppSinks} from '../interfaces';
 import {requestHistorical} from '../requests/crypto';
-import update from 'react-addons-update';
+import Input from './input';
 
 export default function Header(sources: ComponentSources): AppSinks {
   const state$ = sources.state$;
@@ -23,7 +24,10 @@ export default function Header(sources: ComponentSources): AppSinks {
   const input$ = sources.DOM.select('.header-search');
 
   const inputChange$ = input$.events('keyup');
-  const blur$ = xs.merge(input$.events('blur'), inputChange$.map(getKeycode).filter(code => code === 27));
+  const blur$ = xs.merge(
+    input$.events('blur'),
+    inputChange$.map(getKeycode).filter(code => code === 27 || code === 13)
+  );
 
   const selecting$ = inputChange$
     .map(getKeycode)
@@ -58,12 +62,21 @@ export default function Header(sources: ComponentSources): AppSinks {
       return update(state, {selected: {$set: suggestions[selecting].Name}});
     }))
 
-  const vdom$ = xs.combine(inputValue$, suggestions$, selecting$)
-    .map(([inputValue, suggestions, selecting]) => {
+  // Input component allows for a controlled input
+  const input = Input({
+    Props: xs.of({
+      className: '.header-search',
+      placeholder: 'Search by Symbol or Name'
+    }),
+    Assign: inputValue$
+  });
+
+  const vdom$ = xs.combine(input.DOM, suggestions$, selecting$)
+    .map(([inputDOM, suggestions, selecting]) => {
       return div('.header', [
         div('.header-title', 'CX'),
         div('.header-search-container', [
-          input('.header-search', {attrs: {type: 'text', value: inputValue, placeholder: 'Search by symbol or name'}}),
+          inputDOM,
           suggestions.length ? div('.header-suggestions', suggestions.map((suggestion, i) => {
             return div('.suggestion', {
               style: {backgroundColor: i === selecting ? '#f0f0f0' : 'transparent'}
