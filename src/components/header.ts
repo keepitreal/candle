@@ -12,8 +12,6 @@ import Input from './input';
 export default function Header(sources: ComponentSources): AppSinks {
   const state$ = sources.state$;
 
-  const fetchHistorical$: Stream<RequestBody> = xs.of(requestHistorical('BTC'));
-
   const historical$: Stream<Reducer> = sources.HTTP.select('historical')
     .flatten()
     .map((res: any) => res.body.Data)
@@ -60,7 +58,7 @@ export default function Header(sources: ComponentSources): AppSinks {
     .filter(([{keyCode}]) => keyCode === 13)
     .map(([,selecting, suggestions]) => state => {
       return update(state, {selected: {$set: suggestions[selecting].Name}});
-    }))
+    }));
 
   // Input component allows for a controlled input
   const input = Input({
@@ -81,7 +79,7 @@ export default function Header(sources: ComponentSources): AppSinks {
             return div('.suggestion', {
               style: {backgroundColor: i === selecting ? '#f0f0f0' : 'transparent'}
             }, suggestion.FullName);
-          })) : span()
+          })) : span('.empty')
         ]),
         span()
       ]);

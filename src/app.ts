@@ -10,7 +10,7 @@ import Sidebar from './components/sidebar';
 import Graph from './components/graph';
 import Drawer from './components/drawer';
 import Header from './components/header';
-import Heading from './components/heading';
+import Tabs from './components/tabs';
 import {requestHistorical, requestCoinList, requestSnapshot} from './requests/crypto';
 
 import {
@@ -34,6 +34,7 @@ export function App(sources: AppSources): AppSinks {
     coinlist: {},
     symbols: [],
     searchTerm: '',
+    period: 30,
     currencies: {
       BTC: { snapshot: {}, symb: 'BTC', days: [], fullname: 'Bitcoin' },
       ETH: { snapshot: {}, symb: 'ETH', days: [], fullname: 'Ethereum'},
@@ -52,7 +53,6 @@ export function App(sources: AppSources): AppSinks {
     .map(requestSnapshot);
 
   const fetchCoinList$: Stream<RequestBody> = xs.of(requestCoinList());
-  const fetchHistorical$: Stream<RequestBody> = xs.of(requestHistorical('BTC'));
 
   const historical$: Stream<Reducer> = sources.HTTP.select('historical')
     .flatten()
@@ -83,11 +83,16 @@ export function App(sources: AppSources): AppSinks {
   const selectedChanged$ = state$.map(({selected}) => selected)
     .compose(dropRepeats((a, b) => a === b));
 
+  const periodChanged$ = state$.map(({period}) => period)
+    .compose(dropRepeats((a, b) => a === b));
+
   const updateSelected$ = selectedChanged$
     .map(() => fetchSnapshots$).flatten();
 
-  const updateHistorical$ = selectedChanged$
-    .map(requestHistorical);
+  const updateHistorical$ = state$
+    .compose(dropRepeats((a, b) => a.period === b.period && a.selected === b.selected))
+    .debug(v => console.log(v))
+    .map(({selected, period}) => requestHistorical(selected, period));
 
   const coinlist$: Stream<Reducer> = sources.HTTP.select('coinlist')
     .flatten()
@@ -103,7 +108,6 @@ export function App(sources: AppSources): AppSinks {
     DOM: vdom$,
     HTTP: xs.merge(
       fetchCoinList$,
-      fetchHistorical$,
       fetchSnapshots$,
       updateSelected$,
       updateHistorical$
@@ -124,13 +128,13 @@ function view(sources: AppSources): Stream<VNode> {
   const {state$} = onion;
   const graph = Graph({DOM, props$: state$});
   const header = Header({DOM, HTTP, state$});
-  const heading = Heading({DOM, state$});
+  const heading = Tabs({DOM, state$});
 
   const vdom$ = xs.combine(state$, graph.DOM, header.DOM, heading.DOM)
-    .map(([state, GraphEl, HeaderEl, HeadingEl]) => {
+    .map(([state, GraphEl, HeaderEl, TabsEl]) => {
       return div('.view-wrapper', [
         HeaderEl,
-        div('.main-view', [HeadingEl, GraphEl])
+        div('.main-view', [TabsEl, GraphEl])
       ]);
     });
 

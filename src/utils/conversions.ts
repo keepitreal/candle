@@ -6,7 +6,8 @@ export function toDollar(amt: number = 0, format: string = '$0,0.00'): string {
   return numeral(amt).format(format);
 }
 
-export function toDollarThousands(amt: number = 0, format: string = '$0,0.00', thousandsSym: string = 'k'): string {
+export function toDollarThousands(amt: number = 0): string {
+  const format = amt > 100 ? '0,0' : '0,0.00';
   return numeral(amt).format(format);
 }
 

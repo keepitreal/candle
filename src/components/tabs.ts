@@ -5,7 +5,7 @@ import {div, span} from '@cycle/dom';
 import {ComponentSources, AppSinks} from '../interfaces';
 import {toDollar, decimalToPCT} from '../utils/conversions';
 
-export default function Heading(sources: ComponentSources): AppSinks {
+export default function Tabs(sources: ComponentSources): AppSinks {
   const {state$} = sources;
 
   const props$ = state$.map(({selected, currencies}) => {
@@ -17,7 +17,7 @@ export default function Heading(sources: ComponentSources): AppSinks {
       symbol: currency.symb,
       price: snapshot && toDollar(snapshot.PRICE),
       change: snapshot && `${positive ? '+' : '-'} ${snapshot.CHANGEDAY.toFixed(2)}`,
-      pctchange: snapshot && `${decimalToPCT(snapshot.CHANGEPCTDAY/100)}`
+      pctchange: snapshot && `${decimalToPCT(snapshot.CHANGEPCTDAY / 100)}`
     };
   });
 
@@ -30,7 +30,7 @@ export default function Heading(sources: ComponentSources): AppSinks {
           span('.heading-change', `${change} (${pctchange})`)
         ])
       ])
-    ])
+    ]);
   });
 
   const sinks = {
