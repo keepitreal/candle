@@ -18,7 +18,7 @@ declare type ElementList = NodeListOf<HTMLElement>;
 export default function Graph(sources: ComponentSources): AppSinks {
   const {props$, DOM} = sources;
 
-  const margin = {top: 40, bottom: 20, right: 20, left: 30};
+  const margin = {top: 0, bottom: 20, right: 40, left: 10};
 
   const graph$ = DOM.select('.graph').elements()
     .compose(dropRepeats((a, b: ElementList) => b[0] && b[0].clientHeight));
@@ -92,19 +92,19 @@ export default function Graph(sources: ComponentSources): AppSinks {
       const labels = tickCoords.map((coords, i) => {
         return i % 2 === 0 ?
           h('text.axis-label', {
-            attrs: {x: -margin.right / 2, y: coords}
+            attrs: {x: width, y: coords}
           }, toDollarThousands(scaleY.invert(coords))) :
-          h('line.tick', {attrs: {x1: -width, x2: -30, y1: coords, y2: coords}});
+          h('line.tick', {attrs: {x1: width, x2: 0, y1: coords, y2: coords}});
       });
 
       const border = h('line.border.border-y', {attrs: {
-        x1: -margin.right,
-        x2: -margin.right,
+        x1: width,
+        x2: width,
         y1: 0,
         y2: height
       }});
 
-      return h('g.axis', {style: {transform: `translateX(${width}px)`}}, [border, ...labels]);
+      return h('g.axis', [border, ...labels]);
     });
 
   const lineFns$ = xs.combine(scaleX$, scaleY$).map(([scaleX, scaleY]) => ({
@@ -160,21 +160,23 @@ export default function Graph(sources: ComponentSources): AppSinks {
 
   const guides$ = DOM.select('.graph').events('mousemove')
     .map((ev) => xs.combine(xs.of(ev), scaleX$, scaleY$, graphBounds$, guidesVisible$))
+    .compose(throttle(16))
     .flatten()
     .map(([ev, scaleX, scaleY, {top, left, height, width}, visible]) => {
-      const x = ev.clientX - left;
-      const y = ev.clientY - top;
+      const x = ev.clientX - left - margin.left + margin.right;
+      const y = ev.clientY - top + margin.top + margin.bottom;
       const price = toDollarThousands(scaleY.invert(y));
       const date = formatDate(scaleX.invert(x));
       const padding = 5;
+      const label = {width: 70, height: 25};
 
       return visible ? h('g', [
         h('line.guideline.horiz', {attrs: {x1: x, x2: x, y1: 0, y2: height}}),
         h('line.guideline.vert', {attrs: {x1: 0, x2: width, y1: y: y2: y}}),
-        h('rect.guideline-label', {attrs: {x: x - 28, y: height, height: 25, width: 56}}),
-        h('rect.guideline-label', {attrs: {x: width - 70, y: y - 16, height: 25, width: 70}}),
-        h('text.guideline-text.horiz', {attrs: {x, y: height + 17}}, date),
-        h('text.guideline-text.vert', {attrs: {x: width - 53, y: y + 2}}, price)
+        h('rect.guideline-label.x', {attrs: {x: x - 28, y: height, height: label.height, width: label.width}}),
+        h('rect.guideline-label.y', {attrs: {x: width - (label.width / 2), y: y - 16, height: label.height, width: label.width}}),
+        h('text.guideline-text.x', {attrs: {x, y: height + 17}}, date),
+        h('text.guideline-text.y', {attrs: {x: width, y: y + 2}}, price)
       ]) : h('g');
     }).startWith(h('g'));
 
