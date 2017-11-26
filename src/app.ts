@@ -90,8 +90,7 @@ export function App(sources: AppSources): AppSinks {
     .map(() => fetchSnapshots$).flatten();
 
   const updateHistorical$ = state$
-    .compose(dropRepeats((a, b) => a.period === b.period && a.selected === b.selected))
-    .debug(v => console.log(v))
+    .compose(dropRepeats((a, b) => a.selected === b.selected))
     .map(({selected, period}) => requestHistorical(selected, period));
 
   const coinlist$: Stream<Reducer> = sources.HTTP.select('coinlist')
