@@ -36,7 +36,8 @@ export default function Graph(sources: ComponentSources): AppSinks {
       const selected = currencies[selected];
       const days = selected.days;
       const len = days.length;
-      return days.slice(length - period, length - 1);
+
+      return days.slice(len - period - 30, len - period - 1);
     })
     .filter((v) => v.length)
     .startWith([{high: 0, low: 0, time: new Date()}]);
@@ -69,20 +70,23 @@ export default function Graph(sources: ComponentSources): AppSinks {
         .range([height - margin.top - margin.bottom, margin.bottom]);
     }).startWith(x => x);
 
-  const guidelines$ = graphBounds$.map(({width, height}) => {
-    const xGuidelines = createLines(
-      {name: 'x', dist: width},
-      {name: 'y', dist: height},
-      guideDist
-    );
-    const yGuidelines = createLines(
-      {name: 'y', dist: height},
-      {name: 'x', dist: width},
-      guideDist
-    );
+  const guidelines$ = xs.combine(graphBounds$, days$, scaleX$, scaleY$)
+    .map(([{width, height}, days, scaleX, scaleY]) => {
+      const xGuidelines = createLines(
+        {name: 'x', dist: width},
+        {name: 'y', dist: height},
+        days,
+        scaleX
+      );
+      //     const yGuidelines = createLines(
+      //       {name: 'y', dist: height},
+      //       {name: 'x', dist: width},
+      //       days,
+      //       guideDist
+      //     );
 
-    return {xGuidelines, yGuidelines};
-  });
+      return {xGuidelines, yGuidelines: h('g')};
+    });
 
   const lineFns$ = xs.combine(scaleX$, scaleY$).map(([scaleX, scaleY]) => ({
     area: area()
@@ -161,19 +165,16 @@ export default function Graph(sources: ComponentSources): AppSinks {
     .map(handleScroll)
     .compose(throttle(30))
     .map(ev => state => {
-      const period = ev.deltaY > 0 ? ++state.period : --state.period;
+      const period = ev.deltaY > 0 ? --state.period : ++state.period;
       return update(state, {period: {$set: period}});
     });
-
-  const graphTools = GraphTools(sources);
 
     const vdom$ = xs.combine(
       graphBounds$,
       guidelines$,
       candlesticks$,
-      guides$,
-      graphTools.DOM
-    ).map(([{height, width}, {xGuidelines, yGuidelines}, candlesticks, guides, graphToolsEl]) => {
+      guides$
+    ).map(([{height, width}, {xGuidelines, yGuidelines}, candlesticks, guides]) => {
       return div('.graph-container', [
         svg('.graph', {
           attrs: { viewBox: `0 0 
@@ -224,23 +225,35 @@ function handleScroll(ev) {
   return ev;
 }
 
-function createLines(primary, secondary, guideDist) {
+function createLines(primary, secondary, days, scaleFn) {
   let lines = [];
 
   const {name: pName, dist: pDist} = primary;
   const {name: sName, dist: sDist} = secondary;
 
-  for (let i = 0; i < (pDist / guideDist); i++) {
-    const variable = pDist - guideDist * i;
+  days.forEach((day) => {
+    const x = scaleFn(convertDate(day.time));
     const line = h('line.tick', {attrs: {
-      [`${pName}1`]: variable,
-      [`${pName}2`]: variable,
+      [`${pName}1`]: x,
+      [`${pName}2`]: x,
       [`${sName}1`]: 0,
       [`${sName}2`]: sDist,
     }});
 
     lines.push(line);
-  }
+  });
+
+//   for (let i = 0; i < (pDist / guideDist); i++) {
+//     const variable = pDist - guideDist * i;
+//     const line = h('line.tick', {attrs: {
+//       [`${pName}1`]: variable,
+//       [`${pName}2`]: variable,
+//       [`${sName}1`]: 0,
+//       [`${sName}2`]: sDist,
+//     }});
+// 
+//     lines.push(line);
+//   }
 
   return lines;
 }

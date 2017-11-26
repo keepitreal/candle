@@ -34,7 +34,8 @@ export function App(sources: AppSources): AppSinks {
     coinlist: {},
     symbols: [],
     searchTerm: '',
-    period: 30,
+    period: 0,
+    span: 30,
     currencies: {
       BTC: { snapshot: {}, symb: 'BTC', days: [], fullname: 'Bitcoin' },
       ETH: { snapshot: {}, symb: 'ETH', days: [], fullname: 'Ethereum'},
@@ -91,7 +92,7 @@ export function App(sources: AppSources): AppSinks {
 
   const updateHistorical$ = state$
     .compose(dropRepeats((a, b) => a.selected === b.selected))
-    .map(({selected, period}) => requestHistorical(selected, period));
+    .map(({selected, span}) => requestHistorical(selected, span));
 
   const coinlist$: Stream<Reducer> = sources.HTTP.select('coinlist')
     .flatten()
