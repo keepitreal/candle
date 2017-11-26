@@ -3,6 +3,7 @@
 import moment from 'moment';
 import cx from 'classnames';
 import xs, {Stream} from 'xstream';
+import update from 'react-addons-update';
 import dropRepeats from 'xstream/extra/dropRepeats';
 import throttle from 'xstream/extra/throttle';
 import {svg, h, h3, div} from '@cycle/dom';
@@ -18,6 +19,8 @@ declare type ElementList = NodeListOf<HTMLElement>;
 export default function Graph(sources: ComponentSources): AppSinks {
   const {props$, DOM} = sources;
 
+  const guideDist = 30;
+
   const margin = {top: 0, bottom: 20, right: 40, left: 10};
 
   const graph$ = DOM.select('.graph').elements()
@@ -29,7 +32,12 @@ export default function Graph(sources: ComponentSources): AppSinks {
     .startWith({height: 0, width: 0, top: 0, left: 0});
 
   const days$ = props$
-    .map(({selected, currencies}) => currencies[selected].days)
+    .map(({selected, currencies, period}) => {
+      const selected = currencies[selected];
+      const days = selected.days;
+      const len = days.length;
+      return days.slice(length - period, length - 1);
+    })
     .filter((v) => v.length)
     .startWith([{high: 0, low: 0, time: new Date()}]);
 
@@ -61,51 +69,20 @@ export default function Graph(sources: ComponentSources): AppSinks {
         .range([height - margin.top - margin.bottom, margin.bottom]);
     }).startWith(x => x);
 
-  const xAxis$ = xs.combine(scaleX$, days$, graphBounds$)
-    .map(([scaleX, days, {height, width]) => {
-      const labels = days.map((day, i) => {
-        const date = convertDate(day.time);
-        const x = scaleX(date);
-        const y = 20;
+  const guidelines$ = graphBounds$.map(({width, height}) => {
+    const xGuidelines = createLines(
+      {name: 'x', dist: width},
+      {name: 'y', dist: height},
+      guideDist
+    );
+    const yGuidelines = createLines(
+      {name: 'y', dist: height},
+      {name: 'x', dist: width},
+      guideDist
+    );
 
-        return i % 2 === 0 ? h('text.axis-label', {
-          attrs: {x, y},
-          style: {display: i % 2 === 0 ? 'static' : 'none'}
-        }, formatDate(date)) :
-          h('line.tick', {attrs: {x1: x, x2: x, y1: -height, y2: -3}});
-      });
-
-      const border = h('line.border', {attrs: {
-        x1: 0,
-        x2: width - margin.left - 6,
-        y1: 0,
-        y2: 0
-      }});
-
-      return h('g.axis', {style: {transform: `translateY(${height}px)`}}, [border, ...labels]);
-    });
-
-  const yAxis$ = xs.combine(scaleY$, days$, graphBounds$)
-    .map(([scaleY, days, {height, width}]) => {
-      const numTicks = height / (width / days.length);
-      const tickCoords = getAxisCoords(height, numTicks);
-      const labels = tickCoords.map((coords, i) => {
-        return i % 2 === 0 ?
-          h('text.axis-label', {
-            attrs: {x: width, y: coords}
-          }, toDollarThousands(scaleY.invert(coords))) :
-          h('line.tick', {attrs: {x1: width, x2: 0, y1: coords, y2: coords}});
-      });
-
-      const border = h('line.border.border-y', {attrs: {
-        x1: width,
-        x2: width,
-        y1: 0,
-        y2: height
-      }});
-
-      return h('g.axis', [border, ...labels]);
-    });
+    return {xGuidelines, yGuidelines};
+  });
 
   const lineFns$ = xs.combine(scaleX$, scaleY$).map(([scaleX, scaleY]) => ({
     area: area()
@@ -174,33 +151,53 @@ export default function Graph(sources: ComponentSources): AppSinks {
         h('line.guideline.horiz', {attrs: {x1: x, x2: x, y1: 0, y2: height}}),
         h('line.guideline.vert', {attrs: {x1: 0, x2: width, y1: y: y2: y}}),
         h('rect.guideline-label.x', {attrs: {x: x - 28, y: height, height: label.height, width: label.width}}),
-        h('rect.guideline-label.y', {attrs: {x: width - (label.width / 2), y: y - 16, height: label.height, width: label.width}}),
+        h('rect.guideline-label.y', {attrs: {x: width - fontAdjust, y: y - 16, height: label.height, width: label.width}}),
         h('text.guideline-text.x', {attrs: {x, y: height + 17}}, date),
         h('text.guideline-text.y', {attrs: {x: width, y: y + 2}}, price)
       ]) : h('g');
     }).startWith(h('g'));
 
+  const updatePeriod$ = DOM.select('.graph').events('mousewheel')
+    .map(handleScroll)
+    .compose(throttle(30))
+    .map(ev => state => {
+      const period = ev.deltaY > 0 ? ++state.period : --state.period;
+      return update(state, {period: {$set: period}});
+    });
+
   const graphTools = GraphTools(sources);
 
-  const vdom$ = xs.combine(graphBounds$, xAxis$, yAxis$, candlesticks$, guides$, graphTools.DOM)
-    .map(([{height, width}, xAxis, yAxis, candlesticks, guides, graphToolsEl]) => {
+    const vdom$ = xs.combine(
+      graphBounds$,
+      guidelines$,
+      candlesticks$,
+      guides$,
+      graphTools.DOM
+    ).map(([{height, width}, {xGuidelines, yGuidelines}, candlesticks, guides, graphToolsEl]) => {
       return div('.graph-container', [
-        graphToolsEl,
         svg('.graph', {
           attrs: { viewBox: `0 0 
-            ${width + margin.right + margin.left} 
-            ${height + margin.top + margin.bottom}
-          `, preserveAspectRatio: 'xMinYMin slice' }
-        }, [yAxis, xAxis, candlesticks, guides])
+          ${width + margin.right + margin.left} 
+          ${height + margin.top + margin.bottom}
+        `, preserveAspectRatio: 'xMinYMin slice' }
+        }, [
+          h('g.xGuides', xGuidelines),
+          h('g.yGuides', yGuidelines),
+          candlesticks, 
+          guides
+        ])
       ]);
     });
 
   const sinks = {
-    DOM: vdom$
+    DOM: vdom$,
+    onion: updatePeriod$
   };
 
   return sinks;
 }
+
+const fontAdjust = 10 * 2;
 
 function convertDate(d: number): Date {
   return new Date(Math.round(d * 1000));
@@ -219,4 +216,31 @@ function getAxisCoords(height: number, num: number): Array<number> {
   }
 
   return coords;
+}
+
+function handleScroll(ev) {
+  ev.preventDefault();
+  ev.stopPropagation();
+  return ev;
+}
+
+function createLines(primary, secondary, guideDist) {
+  let lines = [];
+
+  const {name: pName, dist: pDist} = primary;
+  const {name: sName, dist: sDist} = secondary;
+
+  for (let i = 0; i < (pDist / guideDist); i++) {
+    const variable = pDist - guideDist * i;
+    const line = h('line.tick', {attrs: {
+      [`${pName}1`]: variable,
+      [`${pName}2`]: variable,
+      [`${sName}1`]: 0,
+      [`${sName}2`]: sDist,
+    }});
+
+    lines.push(line);
+  }
+
+  return lines;
 }

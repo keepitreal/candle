@@ -138,7 +138,7 @@ function view(sources: AppSources): Stream<VNode> {
       ]);
     });
 
-  const vstate$ = xs.merge(header.onion);
+  const vstate$ = xs.merge(header.onion, graph.onion);
 
   return {vdom$, vstate$};
 }
