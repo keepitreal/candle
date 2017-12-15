@@ -6,7 +6,6 @@ import {div, span, input} from '@cycle/dom';
 import dropRepeats from 'xstream/extra/dropRepeats';
 import update from 'react-addons-update';
 import {ComponentSources, AppSinks} from '../interfaces';
-import {requestHistorical} from '../requests/crypto';
 import Input from './input';
 
 export default function Header(sources: ComponentSources): AppSinks {

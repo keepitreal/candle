@@ -34,6 +34,7 @@ export function App(sources: AppSources): AppSinks {
     coinlist: {},
     symbols: [],
     searchTerm: '',
+    periodType: PERIOD_TYPES.DAY,
     period: 0,
     span: 30,
     currencies: {
@@ -92,7 +93,7 @@ export function App(sources: AppSources): AppSinks {
 
   const updateHistorical$ = state$
     .compose(dropRepeats((a, b) => a.selected === b.selected))
-    .map(({selected, span}) => requestHistorical(selected, span));
+    .map(({selected, periodType}) => requestHistorical(selected, periodType));
 
   const coinlist$: Stream<Reducer> = sources.HTTP.select('coinlist')
     .flatten()
@@ -142,3 +143,10 @@ function view(sources: AppSources): Stream<VNode> {
 
   return {vdom$, vstate$};
 }
+
+export const PERIOD_TYPES = {
+  DAY: 'day',
+  HOUR: 'hour',
+  MINUTE: 'minute'
+};
+
