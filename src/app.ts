@@ -35,8 +35,11 @@ export function App(sources: AppSources): AppSinks {
     symbols: [],
     searchTerm: '',
     periodType: PERIOD_TYPES.DAY,
-    period: 0,
+    period: 30,
     span: 30,
+    dayOffset: 0,
+    dragging: false,
+    dragStart: 0,
     currencies: {
       BTC: { snapshot: {}, symb: 'BTC', days: [], fullname: 'Bitcoin' },
       ETH: { snapshot: {}, symb: 'ETH', days: [], fullname: 'Ethereum'},
@@ -109,8 +112,8 @@ export function App(sources: AppSources): AppSinks {
     DOM: vdom$,
     HTTP: xs.merge(
       fetchCoinList$,
-      fetchSnapshots$,
-      updateSelected$,
+      //fetchSnapshots$,
+      //updateSelected$,
       updateHistorical$
     ),
    // socketIO: outgoingMsg$,

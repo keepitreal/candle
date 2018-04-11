@@ -3,6 +3,5 @@ build/
 .nyc_output/
 node_modules/
 coverage/
-*.swo
-*.swp
 *.log
+*.sw[a-p]

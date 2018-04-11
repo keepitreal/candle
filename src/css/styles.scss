@@ -121,6 +121,11 @@ html, body {
   padding: 1rem 0 2rem;
 }
 
+.graph-mousedown {
+  cursor: grabbing;
+  cursor: -webkit-grabbing;
+}
+
 .graph {
   flex: 1 1 100%;
   height: 100%;
@@ -143,7 +148,7 @@ line.border {
 }
 
 line.tick {
-  stroke: $offset-grey;
+  stroke: lighten($offset-grey, 2%);
   stroke-width: 1px;
 }
 
